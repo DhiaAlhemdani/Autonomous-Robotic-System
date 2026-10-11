@@ -143,3 +143,59 @@ The system never fails silently. Each level is a state published on `safety_stat
 ## 8. Interface freeze
 
 Before implementation begins, these interfaces are written down and frozen: the MCU serial/CAN frame format (fields, units, scaling, CRC, limits, heartbeat), all ROS 2 message types and topic names with QoS, the configuration file schema (for controller, policy, perception and scenario parameters), the run-metadata schema, and the container entrypoints. Interfaces change only through an explicit change record appended to this document — never silently during development.
+
+## 9. Layer decisions for perception, planning and decision making (proposed, under review)
+
+**Status:** proposal, not yet agreed. Recorded as a change record under the rule in §8. Nothing in §§1–8 is changed by this section. The sim-to-real layer is deliberately excluded and will be specified separately.
+
+**Motivation.** The mission environment is unmapped and contains static and movable objects and people. The dominant nonlinearity has two sources: known dynamics and constraints (wheel slip, actuator limits, obstacle geometry), and unknown interaction (how a movable object moves when contacted, how a person reacts). These are handled by different tools.
+
+### 9.1 Perception (L0): output contract
+
+Perception produces a typed, bounded interface. Pixels never reach L3.
+
+- **Obstacle list:** each object with class (static, movable, person, unknown), position, velocity, a covariance on each, and a detector confidence.
+- **Local costmap:** built from LiDAR, with an unknown-cell layer that is distinct from free space.
+- **Person class:** a separate class with a larger minimum separation (value set in scenario S2, not here).
+- **Validity:** every item carries an age. Items older than the staleness limit are removed, and the affected region is treated as unknown, not free.
+
+### 9.2 Interaction prediction (new sub-layer, L0–L3 boundary)
+
+A learned prediction model estimates the future positions of movable objects and people over the NMPC horizon, with uncertainty. Its output enters L3 only as constraints, never as a command. If its uncertainty is above a threshold, L3 uses worst-case constraints for that object.
+
+### 9.3 Planning (L3–L4)
+
+- **L4 global planner:** unchanged (A*/Dijkstra on the inflated occupancy grid), rerun on request or when the map changes significantly.
+- **L3 local planner:** NMPC for known dynamics and constraints, solved with the real-time iteration scheme at 20–50 Hz. It tracks the global path and handles obstacles from §9.1 and §9.2.
+- **Fallback:** §6 feasibility rule applies unchanged.
+
+### 9.4 Decision making (L5)
+
+The learned policy at 1–5 Hz chooses among a bounded set of behaviours (for example: continue, slow near people, wait, re-route, request assistance). It does not output trajectories or velocities. L3 executes the chosen behaviour, and L2 holds veto power over everything.
+
+Deterministic logic decides the following, not the learned policy: mode changes, the degradation ladder (§6), return-to-start, and emergency stop.
+
+### 9.5 Rationale and rejected alternatives
+
+- **End-to-end learned control** was rejected. It has no explicit constraint handling, and the safety argument would rest on the learned policy alone.
+- **A learned estimator as the sole state source** was rejected. Covariance is required by §6 and by the degradation ladder, and a learned estimator does not provide a checkable one.
+- **Learned perception feeding the NMPC directly as pixels or raw detections** was rejected. The interface would be untyped and its failure modes unbounded.
+
+### 9.6 Alternatives to evaluate before freezing
+
+These are open alternatives, not yet compared on evidence:
+
+- **Sampling-based MPC (e.g. MPPI)** as a replacement for NMPC at L3. It handles non-convex obstacle geometry without a gradient and parallelises on the GPU. Its weaker points are hard constraint satisfaction, certifiability and tuning sensitivity. Decide only after a benchmark on the scenarios S1–S5.
+- **Robust safety filter with a learned barrier** (Q-CBF style, or gameplay-filter style) as an additional layer around L2. It treats moving objects as adversarial disturbances. It complements NMPC rather than replacing it.
+- **Interaction-aware planning with explicit multi-agent prediction**, as an alternative to §9.2. It is more expensive and needs a validated prediction model, which we do not have.
+
+### 9.7 Evaluation criteria for choosing between alternatives
+
+All candidates are compared on identical runs of scenarios S1–S5 (`docs/00` §2), with these measured outcomes: tracking error against a classical baseline; minimum distance to people and to movable objects, and the count of safety interventions; p99 solve time on the target hardware; and the fraction of commands overridden by L2. No candidate is adopted as "optimal" without these measurements.
+
+### 9.8 Open items
+
+- Confirm the output contract in §9.1 with the perception design (`docs/theory/07`).
+- Decide whether §9.2 is needed in the first milestone or deferred.
+- Specify the behaviour set for §9.4.
+- Run the §9.6 comparison before any NMPC tuning begins.

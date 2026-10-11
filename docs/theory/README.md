@@ -12,6 +12,7 @@ The derivations, models and assumptions behind every controller in this system. 
 | 06 | [Integrating RL with MPC and Safety](06-rl-mpc-integration-and-safety.md) | Four integration topologies, control barrier functions, safety filters, feasibility, discrete-time guarantees | L2, L5 |
 | 07 | [Perception and Deep Learning](07-perception-dl.md) | Detection/segmentation/depth, traversability, learned costmaps, uncertainty, latency budget, edge deployment | L0 |
 | 08 | [Safety, Verification and Validation](08-safety-and-verification.md) | Hazard analysis, relevant standards, safety architecture, V&V plan, metrics, scenario generation | all |
+| 09 | [Planning Among Moving Agents](09-interaction-aware-planning.md) | Prediction-conditioned NMPC (Core) and interaction-aware planning (Advanced), staged plan, evaluation protocol | L3 |
 
 ## How to use this series
 

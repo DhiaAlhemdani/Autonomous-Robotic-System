@@ -2,6 +2,23 @@
 
 All notable changes to this design record. Format inspired by Keep a Changelog; the project is pre-implementation, so entries are design records rather than releases.
 
+## [0.5.3] — 2026-10-11 — Theory 09: planning among moving agents
+
+**Added**
+
+- `docs/theory/09-interaction-aware-planning.md`: two documented approaches. A: prediction-conditioned NMPC with chance constraints (Core). B: interaction-aware planning with a learned response model (Advanced). Includes staged plan, failure modes, evaluation protocol and open questions. Nothing implemented or measured.
+- `docs/theory/README.md`: row for theory 09.
+
+**Not applied:** docs 00 to 02 unchanged.
+
+## [0.5.2] — 2026-10-11 — Layer decisions for perception, planning and decision making
+
+**Added**
+
+- `docs/02-system-architecture.md` §9: proposed layer decisions for perception (typed output contract), interaction prediction, planning (L3 NMPC with real-time iteration, fixed L4 global planner), decision making (learned choice among bounded behaviours, rule-based mode changes and fallbacks), rejected alternatives, alternatives still to benchmark (sampling-based MPC, robust learned safety filter, interaction-aware planning) and the evaluation criteria.
+
+**Not applied:** §§1–8 of doc 02 are unchanged. §9 is a proposal under review, and the sim-to-real layer is excluded from it.
+
 ## [0.5.1] — 2026-10-09 — Industry case study: three more companies
 
 **Added**
