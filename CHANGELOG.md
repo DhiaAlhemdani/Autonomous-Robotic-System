@@ -2,6 +2,14 @@
 
 All notable changes to this design record. Format inspired by Keep a Changelog; the project is pre-implementation, so entries are design records rather than releases.
 
+## [0.6.0] — 2026-10-14 — Scope change: humanoid platform and wider operating domain
+
+**Added**
+
+- `docs/11-scope-change-humanoid.md`: change record confirmed by the project owner. Records the move from a differential-drive robot to a humanoid, the widened operating domain (people, animals, static and movable objects), the consequences for docs 00–02, the feasibility risk, and open decisions.
+
+**Not applied:** docs 00–02 are unchanged. They will be revised as a separate step, after the decisions in doc 11 §5 and the dilemma decision in doc 07 §4.
+
 ## [0.5.3] — 2026-10-11 — Theory 09: planning among moving agents
 
 **Added**
