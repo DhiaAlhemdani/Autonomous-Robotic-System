@@ -2,6 +2,12 @@
 
 All notable changes to this design record. Format inspired by Keep a Changelog; the project is pre-implementation, so entries are design records rather than releases.
 
+## [0.6.1] — 2026-10-14 — Public humanoid projects
+
+**Added**
+
+- `docs/12-public-humanoid-projects.md`: public humanoid projects grouped by role (locomotion, whole-body control, navigation integration, open hardware, foundation models), with maturity signals, licence status and quality flags. Includes the closest existing design found (rl_hnav, Nav2 with an RL locomotion policy on a G1). Nothing has been run or verified in this project.
+
 ## [0.6.0] — 2026-10-14 — Scope change: humanoid platform and wider operating domain
 
 **Added**
