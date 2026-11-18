@@ -20,6 +20,22 @@ services:
     image: ars/base:local
     entrypoint: ["/bin/true"]   # build-only service
 
+  sim:
+    <<: *ros-common
+    build:
+      context: .
+      dockerfile: docker/sim/Dockerfile
+      args:
+        BASE_IMAGE_TAG: ars/base:local
+    image: ars/sim:local
+    depends_on: [base]
+    profiles: ["sim-only"]
+    volumes:
+      - ./third_party/T800-PROJECT:/home/robot/t800:ro
+      - ./scripts:/home/robot/scripts:ro
+    command: ["python", "/home/robot/scripts/check_t800_model.py", "/home/robot/t800"]
+
+
   dev:
     <<: *ros-common
     build:
@@ -36,3 +52,5 @@ services:
     command: ["bash"]
     stdin_open: true
     tty: true
+
+  

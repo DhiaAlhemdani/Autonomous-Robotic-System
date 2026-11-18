@@ -2,6 +2,20 @@
 
 All notable changes to this design record. Format inspired by Keep a Changelog; the project is pre-implementation, so entries are design records rather than releases.
 
+## [0.8.0] — 2026-11-18 — Simulation image: T800 model loads
+
+**Added**
+
+- `docker/sim/Dockerfile`: simulation image with MuJoCo 3.2.3 and numpy 1.26.4 in a virtualenv, built on `ars/base`.
+- `sim` service in `docker-compose.yml`: mounts the T800 submodule read-only and runs the model check.
+- `scripts/check_t800_model.py`: loads the T800 MJCF and prints its structure.
+
+**Verified on the laptop:** the model loads (31 bodies, 26 joints, 25 actuators, 84.92 kg from the model file) and a forward step runs.
+
+**Not done:** no controller, no simulation loop, no comparison with the physical robot.
+
+## [0.7.9]
+
 ## [0.7.9] — 2026-11-18 — Platform: T800 (decided by the project owner)
 
 **Added**
