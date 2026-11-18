@@ -25,9 +25,14 @@ def main() -> int:
     ap.add_argument("--seeds", type=int, default=50)
     ap.add_argument("--out", default="runs/stage0.json")
     ap.add_argument("--analytic", action="store_true", help="analytic SLSQP gradients")
+    ap.add_argument("--jerk", type=float, default=None, help="override w_jerk")
+    ap.add_argument("--lat", type=float, default=None, help="override w_lat")
+    ap.add_argument("--effort", type=float, default=None, help="override w_effort")
     args = ap.parse_args()
 
-    cfg = Stage0Config()
+    overrides = {k: v for k, v in (("w_jerk", args.jerk), ("w_lat", args.lat),
+                                   ("w_effort", args.effort)) if v is not None}
+    cfg = Stage0Config(**overrides)
     results = [run_episode(seed, cfg, analytic=args.analytic) for seed in range(args.seeds)]
     report = {
         "generated_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -43,6 +48,7 @@ def main() -> int:
         },
         "seeds": args.seeds,
         "analytic_gradients": args.analytic,
+        "overrides": overrides,
         "summary": summarize(results),
     }
     os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True)

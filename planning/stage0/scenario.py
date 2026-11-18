@@ -43,6 +43,8 @@ class EpisodeResult:
     reasons: list = field(default_factory=list)
     messages: list = field(default_factory=list)
     min_constraints: list = field(default_factory=list)
+    accels: list = field(default_factory=list)       # executed commands
+    lateral: list = field(default_factory=list)      # lateral accel vs true heading (metric)
 
 
 def _place_scene(rng):
@@ -100,6 +102,13 @@ def run_episode(seed: int, cfg: Stage0Config, max_time: float = 30.0, hook=None,
 
         # Robot step (ideal tracking of the planned acceleration)
         a = r.accel
+        res.accels.append(a.copy())
+        vn = np.linalg.norm(x[2:])
+        if vn > 1e-6:
+            hd = x[2:] / vn
+            res.lateral.append(float(np.linalg.norm(a - (a @ hd) * hd)))
+        else:
+            res.lateral.append(float(np.linalg.norm(a)))
         x[:2] = x[:2] + x[2:] * dt + 0.5 * a * dt * dt
         x[2:] = x[2:] + a * dt
 
@@ -134,6 +143,18 @@ def summarize(results):
     times = np.concatenate([np.array(r.solve_times) for r in results])
     statuses = [s for r in results for s in r.statuses]
     min_person = np.array([r.min_dist_person for r in results])
+    jerk_vals = []
+    lat_vals = []
+    acc_vals = []
+    for r in results:
+        A = np.array(r.accels)
+        if len(A) > 1:
+            jerk_vals.append(np.diff(A, axis=0) / DT_FOR_METRIC)
+        acc_vals.append(np.linalg.norm(A, axis=1))
+        lat_vals.append(np.array(r.lateral))
+    jerk_norm = np.linalg.norm(np.concatenate(jerk_vals), axis=1)
+    lat_all = np.concatenate(lat_vals)
+    acc_all = np.concatenate(acc_vals)
     reasons = [s for r in results for s in r.reasons]
     messages = [m for r in results for s, m in zip(r.reasons, r.messages) if s != "ok"]
     infeasible_min_c = [c for r in results for s, c in zip(r.reasons, r.min_constraints) if s == "constraint_violation"]
@@ -147,6 +168,12 @@ def summarize(results):
         "episodes_with_violation": sum(r.violation_steps > 0 for r in results) / n,
         "episodes_with_freezing": sum(r.freezing_steps > 0 for r in results) / n,
         "infeasible_step_fraction": statuses.count("infeasible") / max(len(statuses), 1),
+        "smoothness": {
+            "jerk_rms_m_s3": float(np.sqrt(np.mean(jerk_norm ** 2))),
+            "jerk_p95_m_s3": float(np.percentile(jerk_norm, 95)),
+            "lateral_rms_m_s2": float(np.sqrt(np.mean(lat_all ** 2))),
+            "accel_max_m_s2": float(acc_all.max()),
+        },
         "min_dist_person_m": {
             "p5": float(np.percentile(min_person, 5)),
             "p50": float(np.percentile(min_person, 50)),
@@ -158,3 +185,6 @@ def summarize(results):
             "n_solves": int(times.size),
         },
     }
+
+
+DT_FOR_METRIC = 0.1  # must equal Stage0Config.dt (used only for the jerk metric)

@@ -2,6 +2,17 @@
 
 All notable changes to this design record. Format inspired by Keep a Changelog; the project is pre-implementation, so entries are design records rather than releases.
 
+## [0.9.5] — 2026-11-18 — Stage 0 smoothness: cost-only change
+
+**Added**
+
+- `Stage0Config.w_lat` (lateral acceleration term; default 0, so earlier results reproduce). Analytic gradient included and tested.
+- Smoothness metrics in the runner summary: jerk RMS and p95, lateral RMS, peak acceleration. Measured from executed commands.
+- `run.py --jerk --lat --effort` overrides.
+- `docs/13` §13: sweep and 50-seed validation. Candidate (w_jerk 2, w_lat 2): jerk −19%, lateral −17%, no safety regression on 50 seeds, median solve time ~2× (43 → 91 ms).
+
+**Not changed:** all constraints; the default weights. The candidate is not the default pending a decision on solve time.
+
 ## [0.9.4] — 2026-11-18 — Stage 0 step 3: analytic gradients (opt-in)
 
 **Added**

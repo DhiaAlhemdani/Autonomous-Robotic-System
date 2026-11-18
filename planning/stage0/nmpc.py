@@ -50,6 +50,7 @@ class Stage0NMPC:
         self.analytic = analytic  # if True, pass analytic gradients to SLSQP
         self._warm = None
         self._prev_accel = np.zeros(2)
+        self._Pperp = np.eye(2)  # projector onto the lateral direction; set per solve
 
     def _rollout(self, x0, U):
         dt = self.cfg.dt
@@ -80,7 +81,9 @@ class Stage0NMPC:
         seq = np.vstack([self._prev_accel[None, :], A])
         jerk = np.sum(np.diff(seq, axis=0) ** 2)
         effort = cfg.dt * np.sum(A * A)
-        return cfg.w_goal * float(e @ e) + cfg.w_effort * effort + cfg.w_jerk * jerk
+        lat = cfg.dt * np.sum((A @ self._Pperp.T) ** 2) if cfg.w_lat else 0.0
+        return (cfg.w_goal * float(e @ e) + cfg.w_effort * effort + cfg.w_jerk * jerk
+                + cfg.w_lat * lat)
 
     def _cons_jac(self, U, x0, agents, radii):
         cfg = self.cfg
@@ -114,6 +117,8 @@ class Stage0NMPC:
         for j in range(N):
             g[j] += 2.0 * cfg.w_goal * e * dt * dt * (0.5 + (N - 1 - j))
         g += 2.0 * cfg.w_effort * dt * A
+        if cfg.w_lat:
+            g += 2.0 * cfg.w_lat * dt * (A @ self._Pperp.T)
         seq = np.vstack([self._prev_accel[None, :], A])
         d = np.diff(seq, axis=0)  # d[k] = seq[k+1] - seq[k]
         for j in range(N):
@@ -151,6 +156,14 @@ class Stage0NMPC:
         else:
             cons = [{"type": "ineq", "fun": lambda U: self._constraints(U, x0, agents, radii)}]
             cost_jac = None
+
+        v = x0[2:]
+        if np.linalg.norm(v) > 1e-6:
+            e = v / np.linalg.norm(v)
+        else:
+            d = goal - x0[:2]
+            e = d / np.linalg.norm(d) if np.linalg.norm(d) > 1e-9 else np.array([1.0, 0.0])
+        self._Pperp = np.eye(2) - np.outer(e, e)
 
         t0 = time.perf_counter()
         res = minimize(

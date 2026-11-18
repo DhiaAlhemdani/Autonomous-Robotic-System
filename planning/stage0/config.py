@@ -35,6 +35,9 @@ class Stage0Config:
     w_goal: float = 10.0
     w_effort: float = 0.1
     w_jerk: float = 0.5
+    # Lateral acceleration (theory 09 §2 comfort term), relative to the current heading.
+    # Default 0 keeps earlier results reproducible; set by the smoothness sweep.
+    w_lat: float = 0.0
 
     @property
     def z_delta(self) -> float:

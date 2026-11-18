@@ -118,3 +118,17 @@ def test_analytic_gradients_match_finite_differences():
         e = np.zeros_like(U); e[i] = 1e-6
         J_fd[:, i] = (cons(U + e) - cons(U - e)) / 2e-6
     assert np.allclose(J_an, J_fd, atol=1e-4)
+
+
+def test_analytic_gradients_match_with_lateral_term():
+    from dataclasses import replace
+    cfg = replace(Stage0Config(), w_lat=2.0)
+    ctrl = Stage0NMPC(cfg, analytic=True)
+    ctrl._prev_accel = np.array([0.1, 0.3])
+    x0 = np.array([0.0, 0.0, 0.6, -0.2])
+    goal = np.array([5.0, 0.5])
+    ctrl._Pperp = np.eye(2) - np.outer(x0[2:] / np.linalg.norm(x0[2:]), x0[2:] / np.linalg.norm(x0[2:]))
+    rng = np.random.default_rng(1)
+    U = rng.uniform(-0.5, 0.5, size=2 * cfg.horizon)
+    g_fd = _fd(lambda u: ctrl._cost(u, x0, goal), U)
+    assert np.allclose(ctrl._cost_grad(U, x0, goal), g_fd, atol=1e-5)

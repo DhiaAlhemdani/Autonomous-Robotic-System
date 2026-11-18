@@ -160,3 +160,38 @@ Method: `Stage0NMPC(cfg, analytic=True)` passes analytic gradients of the cost a
 
 **Decision on the default.** Not changed. The solver choice depends on whether the infeasible steps are real infeasibility, which is still unknown for most of them.
 
+## 13. Smoothness (cost-only change; all constraints unchanged)
+
+Scope agreed with the project owner: keep every constraint hard, and improve smoothness through the cost. The lateral term penalises acceleration perpendicular to the current heading (`w_lat`, theory 09 §2 comfort). The jerk term already existed (`w_jerk`). Smoothness is measured from the executed commands, not from the controller's own cost: jerk is the change in acceleration per step divided by dt; lateral acceleration is taken against the true heading at each step.
+
+Sweep on seeds 0–19 (analytic gradients, six configurations run in parallel on two cores, so the timings in that sweep are not usable):
+
+| w_jerk / w_lat | Goal | Violation eps. | Infeasible steps | Jerk RMS (m/s³) | Jerk p95 | Lateral RMS (m/s²) |
+| --- | --- | --- | --- | --- | --- | --- |
+| 0.5 / 0 (default) | 100% | 0% | 5.3% | 4.86 | 12.8 | 0.33 |
+| 2 / 0 | 100% | 0% | 4.0% | 3.72 | 10.0 | 0.26 |
+| 8 / 0 | 100% | 0% | 4.7% | 3.48 | 8.3 | 0.26 |
+| 0.5 / 2 | 100% | 0% | 5.1% | 4.77 | 12.8 | 0.30 |
+| 2 / 2 | 100% | 0% | 3.5% | 3.58 | 9.4 | 0.26 |
+| 8 / 8 | 100% | 0% | 5.4% | 3.51 | 8.3 | 0.22 |
+
+Validation on 50 seeds (0–49), analytic gradients:
+
+| Setting | Goal | Violation eps. | Freezing eps. | Infeasible steps | Jerk RMS | Lateral RMS | Min person dist p5 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 0.5 / 0 (default) | 98% | 4% | 2% | 8.9% | 5.01 | 0.35 | 1.22 m |
+| 2 / 2 (candidate) | 100% | 0% | 0% | 4.4% | 4.05 | 0.29 | 1.25 m |
+
+Solve time, each run alone on the sandbox (10 seeds):
+
+| Setting | p50 | p99 | Max |
+| --- | --- | --- | --- |
+| 0.5 / 0 | 43 ms | 295 ms | 950 ms |
+| 2 / 2 | 91 ms | 341 ms | 606 ms |
+
+**What this shows.** The candidate reduces jerk by about 19% on 50 seeds (26% on the sweep) and lateral acceleration by about 17%. It does not reduce any safety metric; the differences in violation and freezing episodes on 50 seeds are two episodes and are not significant. The infeasible fraction falls, which is consistent with smoother solutions being easier to solve, but this is not established.
+
+**What this costs.** The median solve time roughly doubles, from 43 ms to 91 ms on this sandbox. The p99 is similar. The candidate is therefore not the default. Whether the extra compute is acceptable depends on the L3 rate, which is still undetermined (`docs/02` §9.2).
+
+**What this does not show.** It does not show that the motion is comfortable for people. Jerk and lateral acceleration are proxies for comfort, and the thresholds for comfort are not defined in the docs. It does not show any effect on real hardware.
+
