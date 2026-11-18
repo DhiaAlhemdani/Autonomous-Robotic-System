@@ -1,7 +1,8 @@
 # Base image: Ubuntu 24.04 + ROS 2 Jazzy (LTS) + build tools + non-root user.
 # Implements docs/03 §1. Build with scripts/pin_base_digest.sh first, which writes .env.
 #
-# Fail-closed: BASE_IMAGE and ROS_APT_SOURCE_VERSION have no defaults. The build stops
+# Fail-closed: BASE_IMAGE and ROS_APT_SOURCE_VERSION have no defaults. A placeholder digest
+# makes FROM fail, and scripts/pin_base_digest.sh refuses to write .env for it. The build stops
 # if either is missing, so an unpinned image cannot be produced by accident.
 ARG BASE_IMAGE
 FROM ${BASE_IMAGE}

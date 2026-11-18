@@ -10,11 +10,15 @@ This skeleton implements the first part of `docs/03` (base image, dev image, Com
 
 ## Steps
 
-1. **Pin the base image and the ROS apt-source version** (writes `.env` at the repository root; `.env` is not committed):
+1. **Resolve the base-image digest once** (needs Docker). This rewrites `docker/base/pins.env`, which is committed:
 
    ```bash
-   ./scripts/pin_base_digest.sh
+   ./scripts/pin_base_digest.sh --update
+   git diff docker/base/pins.env      # review, then commit it
+   git commit -am "Pin Ubuntu 24.04 base digest" && git push
    ```
+
+   Until this is done, the build refuses to run, by design. On later days, run `pin_base_digest.sh` without `--update` to write `.env` from the committed pins.
 
 2. **Build the base image** (fails if `.env` is missing):
 

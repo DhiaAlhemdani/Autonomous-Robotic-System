@@ -2,6 +2,16 @@
 
 All notable changes to this design record. Format inspired by Keep a Changelog; the project is pre-implementation, so entries are design records rather than releases.
 
+## [0.7.4] — 2026-11-18 — Committed base-image pins
+
+**Changed**
+
+- `docker/base/pins.env` (committed): holds `BASE_IMAGE` and `ROS_APT_SOURCE_VERSION=1.3.0`. Pins no longer change between runs. Previously the script queried "latest" each time.
+- `scripts/pin_base_digest.sh`: reads the committed pins and writes `.env`. `--update` resolves the Ubuntu digest with docker and rewrites `pins.env`.
+- `docker/README.md`: the first laptop step is now a one-time digest update, committed to the repo.
+
+**Pending:** `BASE_IMAGE` is still `PLACEHOLDER`. Until the digest is resolved and committed, the build and CI `build-base` job fail by design.
+
 ## [0.7.3] — 2026-11-18 — CI for the skeleton
 
 **Added**
