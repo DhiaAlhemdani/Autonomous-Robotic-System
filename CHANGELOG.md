@@ -2,6 +2,17 @@
 
 All notable changes to this design record. Format inspired by Keep a Changelog; the project is pre-implementation, so entries are design records rather than releases.
 
+## [0.10.0] — 2026-11-18 — T800 planar base under NMPC (simulation)
+
+**Added**
+
+- `sim/t800/planar_base.py`: T800 pelvis welded to a mocap base driven by the Stage 0 NMPC; legs held by PD; Stage 0 scenario S2 as visuals and ground truth; closed loop through the physics.
+- `sim/t800/stand_test.py`: standing-pose test (free base falls under per-joint PD at all tested gains).
+- `sim/t800/aggregate.py`: summary over `runs/t800_planar_seed*.json`.
+- `sim/t800/README.md`: results for seeds 0–9: 10/10 goals, 0 falls, 0 violation episodes, max tilt 4.5°. Solve times are sandbox numbers.
+
+**Not included:** balance, walking, whole-body control, the real-time dashboard.
+
 ## [0.9.5] — 2026-11-18 — Stage 0 smoothness: cost-only change
 
 **Added**
