@@ -2,6 +2,14 @@
 
 All notable changes to this design record. Format inspired by Keep a Changelog; the project is pre-implementation, so entries are design records rather than releases.
 
+## [0.7.3] — 2026-11-18 — CI for the skeleton
+
+**Added**
+
+- `.github/workflows/skeleton.yml`: on each push and pull request, runs `scripts/check_skeleton.sh`, then pins and builds the base image and checks that `rclpy` is present and the user is `robot`.
+
+**Not yet verified:** the workflow has not run on GitHub. Its first run is the test.
+
 ## [0.7.2] — 2026-11-18 — Heartbeat shutdown fix
 
 **Fixed**
