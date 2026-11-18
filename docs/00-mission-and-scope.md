@@ -46,7 +46,7 @@ The feature set above — learning-based decision-making **and** advanced nonlin
 
 **Core (must work):** S1 + S2 with a LiDAR/camera SLAM stack, an NMPC trajectory tracker, a measured safety filter, and a container that rebuilds the whole system from scratch.
 
-**Advanced (the differentiator):** RL mission policy with a verifiable safety shield; drive-level NMPC replacing cascade PI on the current loop; sim-to-real validated on hardware.
+**Advanced (the differentiator):** RL mission policy with a verifiable safety shield; drive-level NMPC replacing cascade PI on the current loop; sim-to-real transfer to hardware (a target to be measured, not yet attempted).
 
 **Stretch (research):** reachability-based guarantees for the composed stack; formal verification of the discrete supervisor; multi-robot coordination.
 

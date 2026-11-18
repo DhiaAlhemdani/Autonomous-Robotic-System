@@ -159,8 +159,9 @@ While checking this comparison against the source documents, I found errors in e
 4. **The flood explanation was journalism's, not Waymo's.** NHTSA's filing says only that the vehicle "detected potentially untraversable flood water and proceeded at reduced speed". The "no hard-stop condition" explanation is the journalist's analysis. Attribution corrected in doc 08 §2.4.
 5. **Waymo's sensor generations were mixed up.** The 13-camera, 4-lidar, 6-radar configuration is the 2024 *6th*-generation suite, not the 5th. Corrected in doc 08 §2.1 and §10.
 6. **A source domain was mistyped** in doc 08 §10. Fixed.
-7. **"Verified stop path"** in theory 06 §4 changed to "tested". Doc 02 is queued (G5).
+7. **"Verified stop path"** in theory 06 §4 changed to "tested". Doc 02 was also corrected (§6 wording, checked in the review pass).
 8. **CHANGELOG 0.3.0** repeated the "not perception failures" claim. Superseded by 0.4.0, which records these corrections.
+9. **Review pass (0.7.8).** Items 3 and 7 were only partly true when re-read. Doc 08 still called convergence a "validation", still said "verified safety", still described the pattern as the "headline", and still claimed we were "demonstrated" and "measured". Doc 08's title still said "Most Advanced". Doc 07 §5 claimed a graduate comparison. Doc 04 said "proves" for tests, and theory 04 said "validated" for a test not yet run. Doc 00 said "validated on hardware" for a target, and theory 01 gave an unsourced speed limit. All are now worded as targets, assumptions or search results. Items 1, 2, 4, 5 and 6 were not re-checked in this pass.
 
 ---
 

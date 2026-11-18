@@ -156,7 +156,7 @@ Every parameter below is obtained from a defined experiment, with the method and
 
 ## 6. Assumptions and limits
 
-1. **Rigid body, planar motion.** No suspension dynamics, no body roll/pitch modelling. Valid at ≤ 1 m/s on smooth floors; invalidated by thresholds and ramps, which are handled as disturbances rather than modelled.
+1. **Rigid body, planar motion.** No suspension dynamics, no body roll/pitch modelling. Assumed valid at ≤ 1 m/s on smooth floors (an assumption, not yet measured); invalidated by thresholds and ramps, which are handled as disturbances rather than modelled.
 2. **No-slip rolling.** Violated on wet or dusty floors and during hard braking. Doc 03 adds slip *detection*; slip *compensation* is out of scope for the core tier.
 3. **Decoupled longitudinal/yaw dynamics.** Requires the centre of mass near the drive axle.
 4. **Lumped friction.** Real friction has Coulomb, viscous and Stribeck components; a linearised viscous term is adequate for control at low speed but will mispredict stopping behaviour. This is documented rather than hidden.

@@ -2,6 +2,20 @@
 
 All notable changes to this design record. Format inspired by Keep a Changelog; the project is pre-implementation, so entries are design records rather than releases.
 
+## [0.7.8] — 2026-11-18 — Design-document review pass
+
+**Changed (wording only; no design decisions changed)**
+
+- `docs/08`: title no longer says "Most Advanced"; convergence is a cross-check, not validation; "verified safety" replaced by "published safety reporting"; "headline" and "we are building exactly that" replaced by target and status wording; "no profitable deployment" recorded as a search result.
+- `docs/09` §7: adds item 9 listing what was still overstated and is now fixed. Earlier items were not all true when re-read.
+- `docs/07` §5: removed an unsupported comparison with other graduates; the end-to-end demonstration is marked as a target.
+- `docs/04`: "proves" replaced by "tests" for roadmap stages.
+- `docs/theory/04`: "validated" replaced by "to be checked (not yet run)".
+- `docs/00`: "sim-to-real validated on hardware" marked as a target.
+- `docs/theory/01`: the ≤ 1 m/s validity limit marked as an unmeasured assumption.
+
+**Not yet reviewed:** `docs/08` headings such as "the most advanced deployed system", and the full text of docs 05, 06 and theory 02, 03, 05, 07, 08.
+
 ## [0.7.7] — 2026-11-18 — Troubleshooting notes for the skeleton
 
 **Added**

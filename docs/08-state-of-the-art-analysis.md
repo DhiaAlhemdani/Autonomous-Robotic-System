@@ -1,9 +1,9 @@
-# 08 — State of the Art: The Most Advanced Robotic Systems and Where They Stop
+# 08 — State of the Art: Leading Robotic Systems and Where They Stop
 
 **Purpose.** Establish the actual frontier, analyse how the leading systems are architected, and document where each one fails. This serves three ends:
 
 1. **Positioning** — it is impossible to claim a contribution without knowing what the frontier already does.
-2. **Validation** — if the most advanced system in the world independently converged on our architecture (doc 02, theory 06), that is evidence our design reasoning is sound.
+2. **Cross-check** — if a leading system independently converged on a similar architecture (doc 02, theory 06), that supports our design reasoning. It is not validation: convergence says nothing about performance, which only our own measurements can show.
 3. **Justification** — the failures catalogued here (§5) are the empirical basis for the dilemma selected in doc 07.
 
 **Status:** analysis of public information, October 2026. Every company's internals are opaque; several figures are vendor claims. §8 flags source quality.
@@ -12,11 +12,11 @@
 
 ## 1. "Most advanced" is not one thing — the seven axes
 
-There is no single most advanced robot. A Mars rover with 1990s-class compute holds the record for autonomous operation in the most hostile environment; a robotaxi holds the record for verified safety at scale; a humanoid holds the record for dynamic whole-body control. Each is "most advanced" on a different axis.
+There is no single most advanced robot. A Mars rover with 1990s-class compute holds the record for autonomous operation in the most hostile environment; a robotaxi holds the record for public operation at scale with published safety reporting; a humanoid holds the record for dynamic whole-body control. Each is "most advanced" on a different axis.
 
 | Axis | What it measures | Current holder |
 | --- | --- | --- |
-| **A1 Deployed scale with verified safety** | Autonomous operation, in public, with audited incident data | **Waymo Driver** |
+| **A1 Deployed scale with published safety reporting** | Autonomous operation, in public, with incident data the operator reports | **Waymo Driver** |
 | **A2 Dynamic whole-body control** | Coordinated control of a high-DoF body under load and perturbation | **Boston Dynamics Atlas** |
 | **A3 Learned generalist intelligence** | Task generality across unseen objects, environments and embodiments | **Physical Intelligence π\*0.6 / Figure Helix / Google DeepMind Gemini Robotics** |
 | **A4 Certified safety in hazardous industry** | Third-party certification for operation where a fault kills people | **ANYbotics ANYmal X** (ATEX/IECEx Zone 1) |
@@ -213,7 +213,7 @@ That is doc 07's dilemma D1, confirmed from the industrial-certification side ra
 **Limits — and the most important caution in this document:**
 - **Production is not deployment.** Unitree's revenue is reportedly **~70% research and education**, not industrial work. UBTECH slipped from third in production to fourth in shipments. The industry's own analysts characterise 2026 as "production boom meets deployment reality check."
 - **Claimed success rates are vendor-reported and unaudited** (99.9%). We should treat these exactly as doc 07 treats the sim-to-real marketing figures — as claims, never as evidence.
-- **No demonstrated profitable at-scale deployment** by any vendor.
+- **No profitable at-scale deployment found in our review** (a search result, not a proof of absence).
 - **Certification and safety evidence are absent from the public record**, which matters because these units are entering workspaces shared with people.
 
 **Implication for us:** cheap access to high-quality actuators, encoders and motor drivers is realistic. Buying a *certified* safety-rated drive or a safety relay remains expensive — which is why our architecture puts the independent stop path on the MCU and physical E-stop (doc 02 §2, SF-03) rather than assuming we can buy a certified subsystem.
@@ -232,7 +232,7 @@ Six independent teams, billions of dollars, and every one of them arrives at the
 | 6 | **A data flywheel: operate, mine failures, retrain, re-validate, redeploy** | Waymo (Critic, inner and outer loops), π\*0.6 (experience + corrections) | **theory 05 §4, Route C in the career plan** |
 | 7 | **A declared operating domain, defended loudly** | Waymo (geofence, ODD, "no hard-stop condition for water"), ANYmal X (Zone 1 boundaries), Perseverance (three-sol plans) | **doc 01 §5, doc 02 §6** |
 
-**Pattern 1 is the headline.** It is not a coincidence, a fashion, or a vendor preference. It is the most common answer the field has found to a hard question: how can a learned component be admitted to a safety-relevant loop without a correctness proof for the component itself? The most advanced deployed system in the world arrived at the same answer independently. That is consistent with our choice. It is not evidence that our choice performs; that requires our own measurements.
+**Pattern 1 is the most consistent pattern in the sources reviewed.** It answers a hard question: how can a learned component be admitted to a safety-relevant loop without a correctness proof for the component itself? Waymo, the largest public deployment we reviewed, uses a version of it. That is consistent with our choice. It is not evidence that our choice performs; that requires our own measurements.
 
 **And the counter-pattern is equally clear.** Across the six systems, capability is strong and public evidence is thin. Among those reviewed, Waymo is the only one that describes a safety-case method, and it is still accumulating federal recalls. ANYmal X is the only certified one reviewed here; public descriptions do not indicate learned components in its certified functions. We found no published, complete, general evidence pipeline for a learning-enabled safety function. That is consistent with the gap doc 07 selects; the search was limited, so the claim should be re-checked before publication.
 
@@ -262,7 +262,7 @@ Six independent teams, billions of dollars, and every one of them arrives at the
 
 > The frontier has made large progress on **capability** and is visibly struggling with **evidence**. Waymo has 200+ million autonomous miles, federal reporting obligations and recent recalls, and its public record still shows failures in the categories above. ANYmal X achieved Zone 1 certification; public descriptions do not indicate learned components in its certified functions. We found no published, complete evidence pipeline for a learning-enabled safety function at a scale a small team can execute.
 >
-> **We are building exactly that: the smallest possible complete example.** Our contribution is not better autonomy; it is a *demonstrated, measured, honestly-bounded evidence pipeline* — E1 through E6 from doc 07 — on a system small enough that every claim can be verified. If it works at 1/10,000th the scale, the methodology is the transferable artifact.
+> **We plan to build the smallest possible complete example.** Our intended contribution is not better autonomy; it is a *measured, honestly-bounded evidence pipeline* — E1 through E6 from doc 07 — on a system small enough that every claim can be checked. Nothing has been built or measured yet. If the methodology works at a small scale, it is the transferable artifact.
 
 ## 10. Sources and quality notes
 

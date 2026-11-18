@@ -32,7 +32,7 @@ Two rules govern the whole ladder:
 | **T3 — Advanced** | Edge GPU computer + RGB-D camera + better LiDAR + ultrasonic ring + brake/E-stop hardware + safety relay | $1,500–3,000 | M5–M7 on hardware |
 | **T4 — Research** | Second GPU for training, dynamometer, calibrated measurement equipment | $3,000+ | Model-based RL at scale, drive characterisation |
 
-**Acquisition order (cheapest path to real evidence):** MCU + one motor + encoder (T1) → proves the stop path and the drive loop → LiDAR + chassis + second motor (T2) → proves navigation and NMPC on hardware → edge computer + camera (T3) → proves perception and learning in the loop.
+**Acquisition order (cheapest path to real evidence):** MCU + one motor + encoder (T1) → tests the stop path and the drive loop → LiDAR + chassis + second motor (T2) → tests navigation and NMPC on hardware → edge computer + camera (T3) → tests perception and learning in the loop.
 
 **Important:** do not buy T3 hardware before M4 passes in simulation. Hardware bought before the controller works becomes a source of confusion (is the failure in the model or the plant?), and the simulation path costs nothing while the design is still moving.
 

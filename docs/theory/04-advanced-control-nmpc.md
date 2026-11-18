@@ -135,7 +135,7 @@ with a small penalty encouraging forward progress. This is "MPC on a spatial pat
 
 ## 7. Assumptions and limits
 
-1. **The model is adequate.** Validated by the open-loop prediction test in doc 01 §7. If prediction error over one horizon is large, no amount of solver tuning will help.
+1. **The model is adequate.** To be checked by the open-loop prediction test in doc 01 §7 (not yet run). If prediction error over one horizon is large, no amount of solver tuning will help.
 2. **The state estimate is trustworthy** to a known covariance. Enforced by doc 03 §1.
 3. **Obstacles are static over the prediction horizon**, except for humans handled by a separate safety layer (doc 06) and a conservative velocity-proportional margin. Dynamic-obstacle prediction is a stretch goal (doc 07).
 4. **The solve completes within its deadline.** Monitored, not assumed; violation triggers the fallback chain.

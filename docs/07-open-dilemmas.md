@@ -244,14 +244,14 @@ This is D1, with D2 and D4 as the technical mechanisms that make it hard and tha
 | **It passes T4** | A solo project cannot certify anything — but it **can** build and measure a reference implementation of the evidence pipeline and publish where it fails. That is a real contribution at this scale |
 | **It is laptop-free for the first phase** | This entire dilemma is a methodology, specification and measurement-protocol problem. Zero hardware required to make real progress |
 | **It matches our existing work** | The architecture in doc 06 — RL above MPC, CBF-QP safety filter, supervisor, degradation ladder — *is* a runtime-assurance architecture. We are not starting from nothing; we are changing the question we ask of it |
-| **It matches our demonstrated strength** | The graduation project's limitations and evidence-boundary discipline is precisely the skill this problem demands. Most graduates cannot do it; we have already done it once |
+| **It matches our demonstrated strength** | The graduation project's limitations and evidence-boundary discipline is precisely the skill this problem demands. |
 | **It is what the market is about to need** | Assurance and safety engineering for AI-enabled machinery is a discipline being created right now by the regulation |
 
 ### 4.3 The contribution claim, stated honestly
 
 **What we will claim:**
 
-> A reference architecture and a measurement methodology for generating the *evidence artifacts* that a conformity assessment for a learning-enabled safety component will require, demonstrated end-to-end on a laboratory mobile robot, with published measurements of where the methodology succeeds and where it fails.
+> A reference architecture and a measurement methodology for generating the *evidence artifacts* that a conformity assessment for a learning-enabled safety component will require, to be demonstrated end-to-end on a laboratory mobile robot (target, not yet done), with published measurements of where the methodology succeeds and where it fails.
 
 **What we will not claim:**
 
