@@ -8,7 +8,7 @@ All notable changes to this design record. Format inspired by Keep a Changelog; 
 
 - `docs/08`: title no longer says "Most Advanced"; convergence is a cross-check, not validation; "verified safety" replaced by "published safety reporting"; "headline" and "we are building exactly that" replaced by target and status wording; "no profitable deployment" recorded as a search result.
 - `docs/09` §7: adds item 9 listing what was still overstated and is now fixed. Earlier items were not all true when re-read.
-- `docs/07` §5: removed an unsupported comparison with other graduates; the end-to-end demonstration is marked as a target.
+- `docs/07` §4: removed an unsupported comparison with other graduates; the end-to-end demonstration is marked as a target.
 - `docs/04`: "proves" replaced by "tests" for roadmap stages.
 - `docs/theory/04`: "validated" replaced by "to be checked (not yet run)".
 - `docs/00`: "sim-to-real validated on hardware" marked as a target.

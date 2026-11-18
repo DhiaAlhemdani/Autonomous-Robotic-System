@@ -161,7 +161,7 @@ While checking this comparison against the source documents, I found errors in e
 6. **A source domain was mistyped** in doc 08 §10. Fixed.
 7. **"Verified stop path"** in theory 06 §4 changed to "tested". Doc 02 was also corrected (§6 wording, checked in the review pass).
 8. **CHANGELOG 0.3.0** repeated the "not perception failures" claim. Superseded by 0.4.0, which records these corrections.
-9. **Review pass (0.7.8).** Items 3 and 7 were only partly true when re-read. Doc 08 still called convergence a "validation", still said "verified safety", still described the pattern as the "headline", and still claimed we were "demonstrated" and "measured". Doc 08's title still said "Most Advanced". Doc 07 §5 claimed a graduate comparison. Doc 04 said "proves" for tests, and theory 04 said "validated" for a test not yet run. Doc 00 said "validated on hardware" for a target, and theory 01 gave an unsourced speed limit. All are now worded as targets, assumptions or search results. Items 1, 2, 4, 5 and 6 were not re-checked in this pass.
+9. **Review pass (0.7.8).** Items 3 and 7 were only partly true when re-read. Doc 08 still called convergence a "validation", still said "verified safety", still described the pattern as the "headline", and still claimed we were "demonstrated" and "measured". Doc 08's title still said "Most Advanced". Doc 07 §4 claimed a graduate comparison. Doc 04 said "proves" for tests, and theory 04 said "validated" for a test not yet run. Doc 00 said "validated on hardware" for a target, and theory 01 gave an unsourced speed limit. All are now worded as targets, assumptions or search results. Items 1, 2, 4, 5 and 6 were not re-checked in this pass.
 
 ---
 
