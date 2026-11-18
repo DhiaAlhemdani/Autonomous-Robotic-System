@@ -58,7 +58,7 @@ def _place_scene(rng):
     return goal, persons, objects
 
 
-def run_episode(seed: int, cfg: Stage0Config, max_time: float = 30.0) -> EpisodeResult:
+def run_episode(seed: int, cfg: Stage0Config, max_time: float = 30.0, hook=None) -> EpisodeResult:
     rng = np.random.default_rng(seed)
     goal, persons, objects = _place_scene(rng)
     dt = cfg.dt
@@ -89,6 +89,8 @@ def run_episode(seed: int, cfg: Stage0Config, max_time: float = 30.0) -> Episode
             agents.append(Agent(pred=pred, sigma=sig, d_min=cfg.d_min_object))
 
         r = ctrl.solve(x, goal, agents)
+        if hook is not None and r.status == "infeasible":
+            hook(x.copy(), goal, agents, r)
         res.solve_times.append(r.solve_time_s)
         res.statuses.append(r.status)
         res.reasons.append(r.reason)

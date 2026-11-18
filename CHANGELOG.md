@@ -2,6 +2,16 @@
 
 All notable changes to this design record. Format inspired by Keep a Changelog; the project is pre-implementation, so entries are design records rather than releases.
 
+## [0.9.2] — 2026-11-18 — Stage 0 step 2: re-solving infeasible steps
+
+**Added**
+
+- `planning/stage0/diagnose.py`: re-solves each baseline infeasible step from four starts. The controller is unchanged.
+- `nmpc.py`: optional `init` argument (default keeps current behaviour); `scenario.py`: optional hook (default off).
+- `docs/13` §10: 16% of infeasible steps (20 seeds) were solver failures that another start resolved. The other 84% were not resolved by any of the four starts. Not a proof of infeasibility.
+
+**Not done:** the slack-relaxed feasibility test (step 2b).
+
 ## [0.9.1] — 2026-11-18 — Stage 0 diagnosis: infeasible steps are solver failures
 
 **Added**

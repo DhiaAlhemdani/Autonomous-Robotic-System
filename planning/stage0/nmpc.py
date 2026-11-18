@@ -89,13 +89,15 @@ class Stage0NMPC:
             a = a * (self.cfg.a_max / n)
         return a
 
-    def solve(self, x0, goal, agents) -> SolveResult:
+    def solve(self, x0, goal, agents, init=None) -> SolveResult:
         cfg = self.cfg
         N = cfg.horizon
         z = cfg.z_delta
         radii = [ag.d_min + z * np.sqrt(ag.sigma ** 2 + cfg.sigma_robot ** 2) for ag in agents]
 
-        if self._warm is None:
+        if init is not None:
+            U0 = np.asarray(init, dtype=float).reshape(N, 2)
+        elif self._warm is None:
             U0 = np.zeros((N, 2))
         else:
             U0 = np.vstack([self._warm[1:], self._warm[-1:]])

@@ -99,3 +99,25 @@ Solver messages:
 **What this shows.** The main failure is the SLSQP line search breaking down, which points at the solver setup: finite-difference gradients on constraints that are non-convex (circular exclusion zones) and warm-started from the previous solution. This is a hypothesis; it has not been tested. The 15 "constraints incompatible" steps may be real infeasibility of the linearised subproblem.
 
 **What this does not show.** It does not show that the problems are infeasible, that the braking is wrong, or that the solver is wrong for the production setting. It does not explain the two episodes with separation violations; those were not linked to specific steps.
+
+## 10. Step 2: re-solving the infeasible steps
+
+Method (`planning/stage0/diagnose.py`): the baseline controller runs unchanged on seeds 0–19. At each step where it fell back to braking, the same problem is re-solved with a fresh solver from four starting guesses: zeros, constant acceleration toward the goal, constant braking, and a random sequence. A step counts as a solver failure if any start returns a feasible solution. This is a sample of starts, not a feasibility proof.
+
+Results (`runs/stage0_step2.json`, not committed):
+
+| Outcome | Steps | Share |
+| --- | --- | --- |
+| Feasible solution found from another start (solver failure) | 21 | 16% |
+| No feasible solution from any of the four starts | 113 | 84% |
+
+Starts that first found a feasible solution: zeros 14, toward goal 4, brake 3.
+
+The line search failed ("Positive directional derivative for linesearch") in roughly 110 of 113 re-solves from **every** start. The failure does not depend on the starting point.
+
+**What this shows.** Some of the braking is avoidable by a better start (16% of infeasible steps). The rest is not explained by the start, and the result is consistent with either genuine infeasibility or a solver that breaks down on these problems. The "best constraint value" over the starts was negative in every case (median −0.47 m², closest −0.024 m²), so none of the four starts produced a feasible point.
+
+**What this does not show.** It does not show that the 113 are infeasible. It does not show the controller is wrong for the production setting.
+
+**Next test (step 2b).** Separate the two cases directly: relax the separation constraints with a slack variable and minimise the slack. If the minimum slack is clearly above zero, the problem is infeasible given the robot model and the margins. If it is zero, the solver is failing on a feasible problem. This is also the slack-relaxed step that `docs/02` §4 specifies for infeasible NMPC problems, so it tests the design's own fallback.
+
