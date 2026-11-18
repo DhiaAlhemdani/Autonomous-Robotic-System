@@ -2,6 +2,14 @@
 
 All notable changes to this design record. Format inspired by Keep a Changelog; the project is pre-implementation, so entries are design records rather than releases.
 
+## [0.7.7] — 2026-11-18 — Troubleshooting notes for the skeleton
+
+**Added**
+
+- `docker/README.md`: troubleshooting for the login-shell PATH fix and the cross-container `ipc: host` fix, with diagnostic commands.
+
+**Verified on the laptop:** heartbeat runs in the container with clean shutdown; a second container receives `/heartbeat` messages.
+
 ## [0.7.6] — 2026-11-18 — Shared IPC namespace for ROS services
 
 **Fixed**
