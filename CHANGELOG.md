@@ -2,6 +2,15 @@
 
 All notable changes to this design record. Format inspired by Keep a Changelog; the project is pre-implementation, so entries are design records rather than releases.
 
+## [0.9.3] — 2026-11-18 — Stage 0 step 2b: slack-relaxed feasibility check
+
+**Added**
+
+- `planning/stage0/slack.py` and `slack_check.py`: slack-relaxed separation check, diagnosis only. Two new tests.
+- `docs/13` §11: of 134 infeasible steps (20 seeds), 10% were baseline solver failures, 4% converged to a point with no margin-feasible solution (shortfall 0.09–0.17 m), and 86% were unresolved because the slack solver also failed.
+
+**Not done:** the solver still needs analytic gradients or another NLP method before feasibility can be decided for most steps. No controller change.
+
 ## [0.9.2] — 2026-11-18 — Stage 0 step 2: re-solving infeasible steps
 
 **Added**

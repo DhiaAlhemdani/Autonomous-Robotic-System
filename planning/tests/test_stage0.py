@@ -66,3 +66,22 @@ def test_episode_is_reproducible_from_seed():
     b = run_episode(3, cfg, max_time=5.0)
     assert a.min_dist_person == b.min_dist_person
     assert a.statuses == b.statuses
+
+
+def test_slack_check_feasible_case_has_no_shortfall():
+    from stage0.slack import slack_check
+    cfg = Stage0Config()
+    pred, sig = predict_constant_velocity([3.0, 3.0], [0.0, 0.0], cfg.horizon, cfg.dt,
+                                          cfg.agent_sigma0, 0.0)
+    r = slack_check(cfg, np.zeros(4), np.array([6.0, 0.0]), [Agent(pred, sig, cfg.d_min_person)])
+    assert r["feasible_within_tol"]
+
+
+def test_slack_check_agent_on_robot_is_short():
+    from stage0.slack import slack_check
+    cfg = Stage0Config()
+    pred = np.tile([0.0, 0.0], (cfg.horizon, 1))
+    sig = np.full(cfg.horizon, 0.1)
+    r = slack_check(cfg, np.zeros(4), np.array([5.0, 0.0]), [Agent(pred, sig, 5.0)])
+    assert not r["feasible_within_tol"]
+    assert r["shortfall_m"] > 1.0

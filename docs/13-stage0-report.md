@@ -121,3 +121,23 @@ The line search failed ("Positive directional derivative for linesearch") in rou
 
 **Next test (step 2b).** Separate the two cases directly: relax the separation constraints with a slack variable and minimise the slack. If the minimum slack is clearly above zero, the problem is infeasible given the robot model and the margins. If it is zero, the solver is failing on a feasible problem. This is also the slack-relaxed step that `docs/02` §4 specifies for infeasible NMPC problems, so it tests the design's own fallback.
 
+## 11. Step 2b: slack-relaxed feasibility check
+
+Method (`planning/stage0/slack.py`, `slack_check.py`): at each baseline infeasible step, the separation constraints are relaxed with a per-constraint slack in metres, and the total slack is minimised. The speed limit stays hard. The shortfall is the largest amount any separation margin falls short at the returned point. Two starts are tried: zeros, and constant acceleration toward the goal. The baseline controller is unchanged; the same seeds 0–19 are used.
+
+Results (`runs/stage0_step2b.json`, not committed):
+
+| Outcome | Steps | Share | Meaning |
+| --- | --- | --- | --- |
+| Margin-feasible point found (shortfall ≤ 1 mm) | 14 | 10% | Baseline solver failure; the problem was feasible |
+| Solver converged, no margin-feasible point | 5 | 4% | Probably infeasible under the assumed margins; shortfall 0.09 m (median), 0.17 m (max) |
+| Slack solver itself failed | 115 | 86% | **Unknown.** The solver cannot decide these |
+
+The most common solver message was again "Positive directional derivative for linesearch" (221 of the re-solves).
+
+**What this shows.** The baseline solver is the main obstacle. For 86% of the infeasible steps, neither the baseline nor the slack solver can decide feasibility, so the question cannot be answered for most of the braking. Only 5 steps (4%) show a convergent result pointing to infeasibility, and those have shortfalls of about 10 to 17 cm.
+
+**What this does not show.** It does not show that the robot cannot avoid the people in those steps, that the margins are wrong, or that the controller is wrong for a production system. The 5 cases are a small sample under assumed parameters.
+
+**Consequence for the design.** The margins and the braking fallback cannot be judged until the solver can decide feasibility. Analytic gradients or a different NLP method are the next step. The slack variables stay in the diagnosis code only.
+
