@@ -20,6 +20,7 @@ check bash -n scripts/pin_base_digest.sh
 check bash -n scripts/check_skeleton.sh
 
 # Python parses
+check test -f ros2_ws/src/ars_bringup/setup.cfg
 check python3 -m py_compile ros2_ws/src/ars_bringup/setup.py ros2_ws/src/ars_bringup/ars_bringup/heartbeat.py ros2_ws/src/ars_bringup/launch/heartbeat.launch.py
 
 # Compose parses, if PyYAML is available

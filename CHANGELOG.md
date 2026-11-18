@@ -2,6 +2,13 @@
 
 All notable changes to this design record. Format inspired by Keep a Changelog; the project is pre-implementation, so entries are design records rather than releases.
 
+## [0.7.1] — 2026-11-18 — Skeleton fix: executable install path
+
+**Fixed**
+
+- `ros2_ws/src/ars_bringup/setup.cfg`: installs console scripts to `lib/ars_bringup`, which `ros2 launch` requires for Python packages. Without it, the launch failed with a missing libexec directory.
+- `scripts/check_skeleton.sh`: checks that `setup.cfg` exists.
+
 ## [0.7.0] — 2026-10-14 — Development environment skeleton
 
 **Added**
