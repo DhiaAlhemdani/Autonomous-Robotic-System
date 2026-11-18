@@ -58,7 +58,8 @@ def _place_scene(rng):
     return goal, persons, objects
 
 
-def run_episode(seed: int, cfg: Stage0Config, max_time: float = 30.0, hook=None) -> EpisodeResult:
+def run_episode(seed: int, cfg: Stage0Config, max_time: float = 30.0, hook=None,
+                analytic: bool = False) -> EpisodeResult:
     rng = np.random.default_rng(seed)
     goal, persons, objects = _place_scene(rng)
     dt = cfg.dt
@@ -67,7 +68,7 @@ def run_episode(seed: int, cfg: Stage0Config, max_time: float = 30.0, hook=None)
     p_pos = [p.copy() for p, _ in persons]
     p_vel = [v.copy() for _, v in persons]
 
-    ctrl = Stage0NMPC(cfg)
+    ctrl = Stage0NMPC(cfg, analytic=analytic)
     res = EpisodeResult(seed=seed, goal_reached=False, steps=0,
                         min_dist_person=np.inf, min_dist_object=np.inf,
                         violation_steps=0, freezing_steps=0)

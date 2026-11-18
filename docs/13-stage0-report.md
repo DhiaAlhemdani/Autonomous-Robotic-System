@@ -141,3 +141,22 @@ The most common solver message was again "Positive directional derivative for li
 
 **Consequence for the design.** The margins and the braking fallback cannot be judged until the solver can decide feasibility. Analytic gradients or a different NLP method are the next step. The slack variables stay in the diagnosis code only.
 
+## 12. Step 3: analytic gradients (opt-in)
+
+Method: `Stage0NMPC(cfg, analytic=True)` passes analytic gradients of the cost and of the constraints to SLSQP. Both are checked against finite differences in `test_analytic_gradients_match_finite_differences`. The default stays `analytic=False`, so every number in §4 is unchanged. Both runs use seeds 0–19 and are reproducible with `python -m stage0.run --seeds 20 [--analytic]`.
+
+| Metric (seeds 0–19, sandbox) | Baseline (FD gradients) | Analytic gradients |
+| --- | --- | --- |
+| Goal reached | 100% | 100% |
+| Episodes with violation / freezing | 0% / 0% | 0% / 0% |
+| Solves | 2000 | 1964 |
+| Infeasible steps (brake fallback) | 6.7% (134) | 5.3% (104) |
+| Solver messages on infeasible steps | line search 127, iteration limit 5, incompatible 2 | line search 94, incompatible 5, iteration limit 5 |
+| Solve time p50 / p99 / max | 122 ms / 1.04 s / 1.97 s | 44 ms / 341 ms / 1.40 s |
+
+**What this shows.** Analytic gradients roughly halve the median and cut the p99 by about two thirds. The median of 44 ms is near the lower end of the 20–50 ms design range, but the p99 and max are still far above it, and this is one machine. The infeasible fraction falls only slightly, and most failures remain line-search breakdowns. So the gradients were not the main cause of the failures.
+
+**What this does not show.** It does not show that the solve times will meet the rate on target hardware. It does not show that the infeasible steps are infeasible. Because the line search still fails with exact gradients, the remaining explanation is that the problems themselves are hard for SLSQP, or that many are infeasible under the assumed margins. The step 2b result (§11) is the test that distinguishes these, and it has not been rerun with analytic gradients.
+
+**Decision on the default.** Not changed. The solver choice depends on whether the infeasible steps are real infeasibility, which is still unknown for most of them.
+

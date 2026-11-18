@@ -45,8 +45,9 @@ class SolveResult:
 
 
 class Stage0NMPC:
-    def __init__(self, cfg: Stage0Config):
+    def __init__(self, cfg: Stage0Config, analytic: bool = False):
         self.cfg = cfg
+        self.analytic = analytic  # if True, pass analytic gradients to SLSQP
         self._warm = None
         self._prev_accel = np.zeros(2)
 
@@ -81,6 +82,45 @@ class Stage0NMPC:
         effort = cfg.dt * np.sum(A * A)
         return cfg.w_goal * float(e @ e) + cfg.w_effort * effort + cfg.w_jerk * jerk
 
+    def _cons_jac(self, U, x0, agents, radii):
+        cfg = self.cfg
+        dt = cfg.dt
+        A = U.reshape(-1, 2)
+        N = len(A)
+        P, V = self._rollout(x0, A)
+        rows = []
+        Js = np.zeros((N, 2 * N))
+        for k in range(N):
+            for j in range(k + 1):
+                Js[k, 2 * j:2 * j + 2] = -2.0 * dt * V[k]
+        rows.append(Js)
+        for ag, R in zip(agents, radii):
+            Jd = np.zeros((N, 2 * N))
+            for k in range(N):
+                diff = P[k] - ag.pred[k]
+                for j in range(k + 1):
+                    Jd[k, 2 * j:2 * j + 2] = 2.0 * diff * dt * dt * (0.5 + (k - j))
+            rows.append(Jd)
+        return np.vstack(rows)
+
+    def _cost_grad(self, U, x0, goal):
+        cfg = self.cfg
+        dt = cfg.dt
+        A = U.reshape(-1, 2)
+        N = len(A)
+        P, _ = self._rollout(x0, A)
+        e = P[-1] - goal
+        g = np.zeros((N, 2))
+        for j in range(N):
+            g[j] += 2.0 * cfg.w_goal * e * dt * dt * (0.5 + (N - 1 - j))
+        g += 2.0 * cfg.w_effort * dt * A
+        seq = np.vstack([self._prev_accel[None, :], A])
+        d = np.diff(seq, axis=0)  # d[k] = seq[k+1] - seq[k]
+        for j in range(N):
+            nxt = d[j + 1] if j + 1 < N else 0.0
+            g[j] += 2.0 * cfg.w_jerk * (d[j] - nxt)
+        return g.ravel()
+
     def _brake(self, x0):
         v = x0[2:]
         a = -v / self.cfg.dt
@@ -103,11 +143,18 @@ class Stage0NMPC:
             U0 = np.vstack([self._warm[1:], self._warm[-1:]])
 
         bounds = [(-cfg.a_max, cfg.a_max)] * (2 * N)
-        cons = [{"type": "ineq", "fun": lambda U: self._constraints(U, x0, agents, radii)}]
+        if self.analytic:
+            cons = [{"type": "ineq",
+                     "fun": lambda U: self._constraints(U, x0, agents, radii),
+                     "jac": lambda U: self._cons_jac(U, x0, agents, radii)}]
+            cost_jac = self._cost_grad
+        else:
+            cons = [{"type": "ineq", "fun": lambda U: self._constraints(U, x0, agents, radii)}]
+            cost_jac = None
 
         t0 = time.perf_counter()
         res = minimize(
-            self._cost, U0.ravel(), args=(x0, goal), method="SLSQP",
+            self._cost, U0.ravel(), args=(x0, goal), method="SLSQP", jac=cost_jac,
             bounds=bounds, constraints=cons,
             options={"maxiter": 100, "ftol": 1e-6},
         )

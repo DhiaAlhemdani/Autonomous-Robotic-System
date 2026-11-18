@@ -85,3 +85,36 @@ def test_slack_check_agent_on_robot_is_short():
     r = slack_check(cfg, np.zeros(4), np.array([5.0, 0.0]), [Agent(pred, sig, 5.0)])
     assert not r["feasible_within_tol"]
     assert r["shortfall_m"] > 1.0
+
+
+def _fd(f, U, h=1e-6):
+    g = np.zeros_like(U)
+    for i in range(U.size):
+        e = np.zeros_like(U); e[i] = h
+        g.flat[i] = (f(U + e) - f(U - e)) / (2 * h)
+    return g
+
+
+def test_analytic_gradients_match_finite_differences():
+    cfg = Stage0Config()
+    ctrl = Stage0NMPC(cfg, analytic=True)
+    ctrl._prev_accel = np.array([0.2, -0.1])
+    x0 = np.array([0.0, 0.0, 0.5, 0.2])
+    goal = np.array([4.0, 1.0])
+    pred, sig = predict_constant_velocity([2.0, 0.5], [0.0, -0.3], cfg.horizon, cfg.dt,
+                                          cfg.agent_sigma0, 0.1)
+    agents = [Agent(pred, sig, cfg.d_min_person)]
+    radii = [a.d_min + cfg.z_delta * np.sqrt(a.sigma ** 2 + cfg.sigma_robot ** 2) for a in agents]
+    rng = np.random.default_rng(0)
+    U = rng.uniform(-0.5, 0.5, size=2 * cfg.horizon)
+
+    g_fd = _fd(lambda u: ctrl._cost(u, x0, goal), U)
+    assert np.allclose(ctrl._cost_grad(U, x0, goal), g_fd, atol=1e-5)
+
+    J_fd = np.zeros((len(radii) * 0 + cfg.horizon + cfg.horizon, U.size))
+    cons = lambda u: ctrl._constraints(u, x0, agents, radii)
+    J_an = ctrl._cons_jac(U, x0, agents, radii)
+    for i in range(U.size):
+        e = np.zeros_like(U); e[i] = 1e-6
+        J_fd[:, i] = (cons(U + e) - cons(U - e)) / 2e-6
+    assert np.allclose(J_an, J_fd, atol=1e-4)

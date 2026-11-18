@@ -24,10 +24,11 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--seeds", type=int, default=50)
     ap.add_argument("--out", default="runs/stage0.json")
+    ap.add_argument("--analytic", action="store_true", help="analytic SLSQP gradients")
     args = ap.parse_args()
 
     cfg = Stage0Config()
-    results = [run_episode(seed, cfg) for seed in range(args.seeds)]
+    results = [run_episode(seed, cfg, analytic=args.analytic) for seed in range(args.seeds)]
     report = {
         "generated_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "claim_scope": "simulation only, planar double integrator, scripted S2, assumed parameters",
@@ -41,6 +42,7 @@ def main() -> int:
             "platform": platform.platform(),
         },
         "seeds": args.seeds,
+        "analytic_gradients": args.analytic,
         "summary": summarize(results),
     }
     os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True)

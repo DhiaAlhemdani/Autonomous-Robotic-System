@@ -2,6 +2,16 @@
 
 All notable changes to this design record. Format inspired by Keep a Changelog; the project is pre-implementation, so entries are design records rather than releases.
 
+## [0.9.4] — 2026-11-18 — Stage 0 step 3: analytic gradients (opt-in)
+
+**Added**
+
+- `nmpc.py`: `analytic=True` option with analytic gradients of the cost and constraints. Default unchanged. Checked against finite differences in tests (9 tests pass).
+- `run.py --analytic`.
+- `docs/13` §12: seeds 0–19. Analytic gradients: solve p50 122 → 44 ms, p99 1.04 s → 0.34 s; infeasible steps 6.7% → 5.3%, mostly still line-search failures. Not a rate result for target hardware.
+
+**Not done:** rerun of the step 2b feasibility check with analytic gradients; any change of the default solver.
+
 ## [0.9.3] — 2026-11-18 — Stage 0 step 2b: slack-relaxed feasibility check
 
 **Added**
