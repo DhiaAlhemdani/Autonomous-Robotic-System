@@ -34,5 +34,6 @@ jobs:
         run: docker compose build base
       - name: Smoke-test ROS 2 inside the image
         run: |
+          # Login shell (bash -lc), as used by the compose commands: ros2 must be on PATH without sourcing
           docker compose run --rm --entrypoint bash base -lc \
-            'source /opt/ros/jazzy/setup.bash && ros2 pkg list | grep -qx rclpy && whoami | grep -qx robot'
+            'command -v ros2 && ros2 pkg list | grep -qx rclpy && whoami | grep -qx robot'

@@ -2,6 +2,15 @@
 
 All notable changes to this design record. Format inspired by Keep a Changelog; the project is pre-implementation, so entries are design records rather than releases.
 
+## [0.7.5] — 2026-11-18 — ROS 2 on PATH for login shells
+
+**Fixed**
+
+- `docker/base/Dockerfile`: ROS 2 is sourced from `/etc/profile.d/ros2.sh`, so `bash -lc` finds `ros2`. Ubuntu's default `.bashrc` returns early for non-interactive shells, so the previous `.bashrc` line did not help compose commands.
+- `.github/workflows/skeleton.yml`: the smoke test now runs in a login shell and checks that `ros2` is on PATH.
+
+**Needs rebuild:** `docker compose build base dev`.
+
 ## [0.7.4] — 2026-11-18 — Committed base-image pins
 
 **Changed**

@@ -44,8 +44,13 @@ RUN apt-get update \
 RUN if id -u ubuntu >/dev/null 2>&1; then userdel -r ubuntu; fi \
  && useradd -m -u "${ROBOT_UID}" -s /bin/bash robot
 
+# Login shells read /etc/profile.d (ROS on PATH for "bash -lc"). Ubuntu's default .bashrc
+# returns early for non-interactive shells, so the .bashrc line only helps interactive shells.
+RUN echo 'source /opt/ros/jazzy/setup.bash' > /etc/profile.d/ros2.sh \
+ && echo 'source /opt/ros/jazzy/setup.bash' >> /home/robot/.bashrc \
+ && chown robot:robot /home/robot/.bashrc
+
 USER robot
 WORKDIR /home/robot/ws
-RUN echo 'source /opt/ros/jazzy/setup.bash' >> /home/robot/.bashrc
 
 CMD ["bash"]
