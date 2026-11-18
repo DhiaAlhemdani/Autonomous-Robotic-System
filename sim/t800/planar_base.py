@@ -42,6 +42,8 @@ N_OBJECTS = 2
 
 
 def build_model(solref_weld):
+    if not os.path.exists(XML):
+        raise SystemExit(f"T800 model not found at {XML}; run: git submodule update --init --depth 1 third_party/T800-PROJECT")
     spec = mujoco.MjSpec()
     spec.from_file(XML)
 
@@ -89,7 +91,17 @@ def main():
     ap.add_argument("--max-time", type=float, default=30.0)
     ap.add_argument("--out", default="")
     args = ap.parse_args()
+    res = run_episode(args)
+    text = json.dumps(res, indent=2)
+    print(text)
+    if args.out:
+        os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True)
+        with open(args.out, "w") as f:
+            f.write(text + "\n")
 
+
+def run_episode(args, on_step=None, stop=None):
+    """Run one episode. on_step(dict) is called after every control step; stop() ends it early."""
     cfg = Stage0Config()
     m = build_model(args.weld_solref)
     d = mujoco.MjData(m)
@@ -232,6 +244,25 @@ def main():
             res["violation_steps"] += 1
 
         res["steps"] = step + 1
+        if on_step is not None:
+            on_step({
+                "step": step + 1, "t": round((step + 1) * cfg.dt, 3),
+                "pelvis": [round(float(qx), 3), round(float(qy), 3)],
+                "planner": [round(float(planner[0]), 3), round(float(planner[1]), 3)],
+                "speed": round(float(np.hypot(d.qvel[0], d.qvel[1])), 3),
+                "accel": [round(float(a[0]), 3), round(float(a[1]), 3)],
+                "tilt_deg": round(tilt, 2), "pelvis_z": round(float(d.qpos[2]), 3),
+                "solve_ms": round(r.solve_time_s * 1000.0, 1), "nmpc_status": r.status,
+                "dist_person": round(float(dp), 3), "dist_object": round(float(do), 3),
+                "violation": bool(dp < cfg.d_min_person or do < cfg.d_min_object),
+                "track_err_m": round(res["track_err_m"][-1], 4),
+                "persons": [[round(float(p[0]), 3), round(float(p[1]), 3)] for p in p_pos],
+                "objects": [[round(float(o[0]), 3), round(float(o[1]), 3)] for o in objects],
+                "goal": [round(float(goal[0]), 3), round(float(goal[1]), 3)],
+            })
+        if stop is not None and stop():
+            res["stopped"] = True
+            break
         if step % 50 == 0:
             res.setdefault("trace", []).append([round(float(qx), 3), round(float(qy), 3), round(float(x[2]), 3), round(float(x[3]), 3), round(float(a[0]), 3), round(float(a[1]), 3)])
         if d.qpos[2] < 0.6 or tilt > 20.0:
@@ -255,12 +286,8 @@ def main():
         "track_err_p99_m": float(np.percentile(te, 99)) if te.size else None,
     }
     del res["solve_ms"], res["track_err_m"]
-    text = json.dumps(res, indent=2)
-    print(text)
-    if args.out:
-        os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True)
-        with open(args.out, "w") as f:
-            f.write(text + "\n")
+    return res
+
 
 
 if __name__ == "__main__":

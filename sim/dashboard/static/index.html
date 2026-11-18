@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>T800 planar NMPC — simulation dashboard</title>
+<link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+<header>
+  <h1>T800 planar base under NMPC <span class="tag">simulation</span></h1>
+  <div class="controls">
+    <label>Seed <input id="seed" type="number" min="0" max="10000" value="0"></label>
+    <label>Max time (s) <input id="maxtime" type="number" min="1" max="120" value="30"></label>
+    <button id="start">Start episode</button>
+    <span id="conn" class="pill">connecting…</span>
+    <span id="state" class="pill">idle</span>
+  </div>
+  <p class="note">Sandbox simulation. The base is driven by a weld to a mocap body; the legs hold a PD standing pose. No balance or walking. Rates are measured here, not on target hardware.</p>
+</header>
+
+<section class="kpis">
+  <div class="kpi"><div class="k">Sim time</div><div class="v" id="k-time">—</div></div>
+  <div class="kpi"><div class="k">Real-time factor</div><div class="v" id="k-rtf">—</div><div class="s">sim s per wall s</div></div>
+  <div class="kpi"><div class="k">Max tilt</div><div class="v" id="k-tilt">—</div><div class="s">limit 20°</div></div>
+  <div class="kpi"><div class="k">Closest person</div><div class="v" id="k-person">—</div><div class="s" id="k-person-s">d_min —</div></div>
+  <div class="kpi"><div class="k">Violation steps</div><div class="v" id="k-viol">—</div></div>
+  <div class="kpi"><div class="k">NMPC solve p50 / p99</div><div class="v" id="k-solve">—</div><div class="s">ms, this run</div></div>
+  <div class="kpi"><div class="k">Infeasible (brake)</div><div class="v" id="k-inf">—</div></div>
+  <div class="kpi"><div class="k">Tracking error</div><div class="v" id="k-track">—</div><div class="s">planner vs pelvis, mm</div></div>
+</section>
+
+<section class="grid">
+  <div class="panel scene">
+    <h2>Scene (top-down, metres)</h2>
+    <canvas id="scene" width="760" height="420"></canvas>
+    <div class="legend"><span class="sw robot"></span>robot pelvis <span class="sw person"></span>person <span class="sw object"></span>object <span class="sw goal"></span>goal</div>
+  </div>
+  <div class="panel"><h2>NMPC solve time (ms)</h2><canvas id="c-solve" width="560" height="200"></canvas></div>
+  <div class="panel"><h2>Pelvis tilt (deg)</h2><canvas id="c-tilt" width="560" height="200"></canvas></div>
+  <div class="panel"><h2>Distance to nearest person (m)</h2><canvas id="c-person" width="560" height="200"></canvas></div>
+  <div class="panel"><h2>Speed (m/s) and tracking error (mm)</h2><canvas id="c-speed" width="560" height="200"></canvas></div>
+  <div class="panel"><h2>Commanded acceleration (m/s²)</h2><canvas id="c-accel" width="560" height="200"></canvas></div>
+</section>
+
+<footer>
+  <p>Stage 0 scenario S2 (goal, moving persons, static objects). Persons do not react to the robot. Telemetry is streamed per control step (10 Hz simulated). Solve times are sandbox measurements, not an NMPC rate.</p>
+</footer>
+<script src="static/app.js"></script>
+</body>
+</html>

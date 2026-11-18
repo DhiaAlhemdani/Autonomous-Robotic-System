@@ -2,6 +2,20 @@
 
 All notable changes to this design record. Format inspired by Keep a Changelog; the project is pre-implementation, so entries are design records rather than releases.
 
+## [0.11.0] — 2026-11-18 — Real-time dashboard for the T800 planar NMPC
+
+**Added**
+
+- `sim/dashboard/server.py`: FastAPI server. Runs one episode at a time in a background thread and streams every control step over a WebSocket. Endpoints: `POST /api/run`, `GET /api/status`, `WS /ws`.
+- `sim/dashboard/static/`: plain-canvas page (no external libraries) with the top-down scene and five live charts, plus headline numbers including the measured real-time factor.
+- `sim/dashboard/requirements.txt`, `sim/dashboard/README.md`.
+
+**Changed**
+
+- `sim/t800/planar_base.py`: the episode loop moved into `run_episode(args, on_step, stop)`. The seed-0 result is unchanged (90 steps, tilt 3.21°, closest person 1.95 m). Missing-model error is now explicit.
+
+**Not verified:** the page layout in a browser (none in the sandbox). The stream was tested end to end with a Python WebSocket client.
+
 ## [0.10.0] — 2026-11-18 — T800 planar base under NMPC (simulation)
 
 **Added**
