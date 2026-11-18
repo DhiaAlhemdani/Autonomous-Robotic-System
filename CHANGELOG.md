@@ -2,6 +2,16 @@
 
 All notable changes to this design record. Format inspired by Keep a Changelog; the project is pre-implementation, so entries are design records rather than releases.
 
+## [0.9.1] — 2026-11-18 — Stage 0 diagnosis: infeasible steps are solver failures
+
+**Added**
+
+- `planning/stage0/nmpc.py`: each solve reports `reason` and the solver `message`. The success criterion is unchanged.
+- `planning/stage0/scenario.py`: per-episode reasons, messages and constraint values; summary counts.
+- `docs/13` §9: diagnosis. All 489 infeasible steps in the 50-seed sandbox run were solver failures: 462 line-search breakdowns, 15 incompatible linearised constraints, 12 iteration limits. None were constraint violations. The controller behaviour and the summary metrics are unchanged.
+
+**Not done:** no test yet of whether the problems are feasible; no solver change.
+
 ## [0.9.0] — 2026-11-18 — Stage 0: constant-velocity NMPC in simulation
 
 **Added**

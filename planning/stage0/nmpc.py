@@ -40,6 +40,8 @@ class SolveResult:
     solve_time_s: float
     iterations: int
     min_constraint: float  # min over constraints; >= 0 means satisfied
+    reason: str = "ok"     # "ok", "solver_failed", "constraint_violation", "nonfinite"
+    message: str = ""      # SciPy status message from the solver
 
 
 class Stage0NMPC:
@@ -113,6 +115,15 @@ class Stage0NMPC:
         min_c = float(np.min(g))
         ok = bool(res.success) and min_c >= -1e-4
 
+        if not np.all(np.isfinite(res.x)):
+            reason = "nonfinite"
+        elif not res.success:
+            reason = "solver_failed"
+        elif min_c < -1e-4:
+            reason = "constraint_violation"
+        else:
+            reason = "ok"
+
         if ok:
             U = res.x.reshape(N, 2)
             accel = U[0].copy()
@@ -125,4 +136,5 @@ class Stage0NMPC:
 
         self._prev_accel = accel
         return SolveResult(accel=accel, status=status, solve_time_s=elapsed,
-                           iterations=int(res.nit), min_constraint=min_c)
+                           iterations=int(res.nit), min_constraint=min_c,
+                           reason=reason, message=str(res.message))

@@ -40,6 +40,9 @@ class EpisodeResult:
     freezing_steps: int
     solve_times: list = field(default_factory=list)
     statuses: list = field(default_factory=list)
+    reasons: list = field(default_factory=list)
+    messages: list = field(default_factory=list)
+    min_constraints: list = field(default_factory=list)
 
 
 def _place_scene(rng):
@@ -88,6 +91,9 @@ def run_episode(seed: int, cfg: Stage0Config, max_time: float = 30.0) -> Episode
         r = ctrl.solve(x, goal, agents)
         res.solve_times.append(r.solve_time_s)
         res.statuses.append(r.status)
+        res.reasons.append(r.reason)
+        res.messages.append(r.message)
+        res.min_constraints.append(r.min_constraint)
 
         # Robot step (ideal tracking of the planned acceleration)
         a = r.accel
@@ -125,7 +131,14 @@ def summarize(results):
     times = np.concatenate([np.array(r.solve_times) for r in results])
     statuses = [s for r in results for s in r.statuses]
     min_person = np.array([r.min_dist_person for r in results])
+    reasons = [s for r in results for s in r.reasons]
+    messages = [m for r in results for s, m in zip(r.reasons, r.messages) if s != "ok"]
+    infeasible_min_c = [c for r in results for s, c in zip(r.reasons, r.min_constraints) if s == "constraint_violation"]
+    from collections import Counter
     return {
+        "infeasible_reasons": dict(Counter(r for r in reasons if r != "ok")),
+        "infeasible_messages": dict(Counter(messages).most_common(10)),
+        "constraint_violation_min_c_p50": float(np.percentile(infeasible_min_c, 50)) if infeasible_min_c else None,
         "episodes": n,
         "goal_reached_rate": sum(r.goal_reached for r in results) / n,
         "episodes_with_violation": sum(r.violation_steps > 0 for r in results) / n,

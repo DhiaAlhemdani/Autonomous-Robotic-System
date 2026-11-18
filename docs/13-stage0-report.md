@@ -48,7 +48,7 @@ The run took 14 minutes on the sandbox.
 ## 5. What these results do and do not show
 
 - **Solve time fails the design rate.** `docs/02` §1 puts the NMPC at 20–50 Hz, which is a budget of 20–50 ms. The p50 here (122 ms) is 2.4 to 6 times that budget, and the p99 (1.12 s) is 20 to 55 times it. The baseline solver (SLSQP with finite-difference gradients) is the likely cause, but this has not been tested. The result is a finding about this solver only.
-- **The infeasible fraction is high.** About one step in ten fell back to braking. The cause has not been diagnosed. The solver status and message were not logged per step, so it is unknown whether these were non-convergence, the 1e-4 constraint tolerance, or genuinely infeasible problems. This is the first thing to fix.
+- **The infeasible fraction is high, and it is a solver failure.** About one step in ten fell back to braking. Every one of the 489 infeasible steps was a solver failure (§9). None was a constraint violation, so the 1e-4 tolerance is not the cause. Whether the underlying problems are feasible is not yet known.
 - **Violations are rare but occur.** Two episodes went below the margin. The likely causes are the prediction error from the random-walk persons and the braking steps, but this has not been separated.
 - **Freezing is almost absent here** (one episode). This is expected: the persons do not react to the robot, so the freezing failure mode in `theory/09` §3.3 cannot appear in this scenario. The Stage 0 result for freezing is therefore not evidence against Approach B.
 - **The robot model has no mismatch.** The robot tracks its planned acceleration exactly. Real tracking error would make the margins smaller in practice, and this is not modelled.
@@ -67,9 +67,10 @@ The run took 14 minutes on the sandbox.
 
 ## 7. Next steps (in order)
 
-1. Log the solver status and message for each infeasible step, and separate solver failure from constraint violation. This is the diagnosis step, before any fix.
-2. Run the same runner on the laptop with `docker compose --profile sim-only run --rm sim`, and record its solve times as the first laptop measurement.
-3. Only then choose a faster solver (analytic gradients or a QP-based SQP). Its rate is set by the measured p50 and p99 on target hardware, not assumed.
+1. ~~Log the solver status and message for each infeasible step.~~ Done (§9).
+2. Test whether the infeasible steps are real infeasibility or solver failure: re-solve them with a fresh start and with analytic gradients (diagnosis only; the controller stays unchanged until the cause is known).
+3. Run the same runner on the laptop with `docker compose --profile sim-only run --rm sim`, and record its solve times as the first laptop measurement.
+4. Only then choose a faster solver (analytic gradients or a QP-based SQP). Its rate is set by the measured p50 and p99 on target hardware, not assumed.
 
 ## 8. Limits
 
@@ -77,3 +78,24 @@ The run took 14 minutes on the sandbox.
 - Solve times are for one solver on one machine.
 - The sample is 50 seeds of one scripted scenario.
 - The Gaussian margin is an approximation (`theory/09` §3.3).
+
+## 9. Diagnosis of infeasible steps (step 1)
+
+Same 50 seeds, rerun with the solver status logged per step. The controller is unchanged, and the summary metrics reproduce §4 exactly. File: `runs/stage0_diag_50seeds.json`, not committed.
+
+| Reason | Steps | Share of infeasible steps |
+| --- | --- | --- |
+| Solver failed (`SolveResult.reason = solver_failed`) | 489 | 100% |
+| Constraint violated on a solver "success" | 0 | 0% |
+
+Solver messages:
+
+| SciPy message | Steps |
+| --- | --- |
+| Positive directional derivative for linesearch | 462 |
+| Inequality constraints incompatible | 15 |
+| Iteration limit reached | 12 |
+
+**What this shows.** The main failure is the SLSQP line search breaking down, which points at the solver setup: finite-difference gradients on constraints that are non-convex (circular exclusion zones) and warm-started from the previous solution. This is a hypothesis; it has not been tested. The 15 "constraints incompatible" steps may be real infeasibility of the linearised subproblem.
+
+**What this does not show.** It does not show that the problems are infeasible, that the braking is wrong, or that the solver is wrong for the production setting. It does not explain the two episodes with separation violations; those were not linked to specific steps.
