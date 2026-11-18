@@ -78,3 +78,11 @@ These are the most relevant entries for `docs/11`, because they connect navigati
 - Search results and summaries are secondary. Each repository must be read before its claims are relied on.
 - Star counts and update dates are a snapshot, and they measure attention more than quality.
 - "Most advanced" was not measured. The entries are selected for relevance to `docs/11`, not ranked.
+
+## 9. Added 2026-11-18: the T800 project (the chosen platform's source)
+
+| Project | What it is | Licence (checked) | Status |
+| --- | --- | --- | --- |
+| [DhiaAlhemdani/T800-PROJECT](https://github.com/DhiaAlhemdani/T800-PROJECT), upstream [chenqi142/t800-vlm-navigation](https://github.com/chenqi142/t800-vlm-navigation) | VLM-led semantic object search and navigation for the EngineAI T800 humanoid in MuJoCo, on the EngineAI Native SDK. Includes URDF/MJCF, existing RL walking policies, and a dashboard | BSD-3-Clause (LICENSE.txt, upstream copyright retained). Third-party weights, services and EngineAI docs: not checked | **Simulation prototype.** README: no demonstrated hardware deployment. One recorded demonstration, explicitly not a benchmark |
+
+Relevance: this is the closest public example of a hierarchical semantic navigation layer on a humanoid, which is the layer `docs/11` §2.2 proposes. Its perception uses simulator pose, and it targets objects only, with no person handling. Those limits are listed in `docs/11` §7. Source: the repository README and file tree, read on 2026-11-18. Its claims have not been reproduced.

@@ -2,6 +2,15 @@
 
 All notable changes to this design record. Format inspired by Keep a Changelog; the project is pre-implementation, so entries are design records rather than releases.
 
+## [0.7.9] — 2026-11-18 — Platform: T800 (decided by the project owner)
+
+**Added**
+
+- `docs/11` §7: platform decision. The platform is the T800 humanoid (EngineAI), with model source `DhiaAlhemdani/T800-PROJECT` (BSD-3). The locomotion controller is the T800 project's existing RL walking policy, as a baseline. Simulation prototype only; no hardware deployment. Open items listed. §5 item 1 marked partly decided.
+- `docs/12` §9: the T800 project, with licence and status.
+
+**Not done:** no model files have been imported into this repository. No docs 00–02 revision.
+
 ## [0.7.8] — 2026-11-18 — Design-document review pass
 
 **Changed (wording only; no design decisions changed)**

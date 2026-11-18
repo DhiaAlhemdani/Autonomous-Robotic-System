@@ -56,7 +56,7 @@ Three additions are made at once: a new platform, legged locomotion, and an open
 
 ## 5. Open decisions
 
-1. Which humanoid platform, and whether a locomotion controller is adopted or built.
+1. ~~Which humanoid platform, and whether a locomotion controller is adopted or built.~~ **Partly decided 2026-11-18 (§7):** platform is the T800 humanoid (EngineAI); the locomotion controller is the T800 project's existing RL walking policy, adopted as a baseline and not yet evaluated. Hardware access and the model's fidelity remain open.
 2. Whether outdoor and GPS-denied outdoor operation remain out of scope.
 3. The bounded set of object classes in §3, and whether animals are Core or Advanced.
 4. Whether manipulation remains out of scope (a humanoid may be expected to interact with objects).
@@ -66,3 +66,23 @@ Three additions are made at once: a new platform, legged locomotion, and an open
 ## 6. Datasets relevant to the new platform
 
 Public datasets were searched (see the conversation record for details). No humanoid social-navigation dataset was found. The closest wheeled and quadruped options are JRDB, SiT, SCAND and PeRoI. Animal and general-obstacle datasets were not searched. Licences were not checked for any of these. They must be verified before use.
+
+## 7. Platform decision: T800 (2026-11-18)
+
+**Decided by the project owner:** the platform is the **T800 humanoid** (EngineAI). The model source is the owner's fork, `DhiaAlhemdani/T800-PROJECT` (BSD-3-Clause, upstream `chenqi142/t800-vlm-navigation`). That repository is built on the EngineAI Native SDK. It contains a URDF and MJCF model for the T800 (`assets/resource/robot/t800/`), MuJoCo simulation and existing RL walking policies (`assets/config/t800/`).
+
+**What this decision covers**
+
+- The simulated robot model and its mass, joint and sensor description, taken from the repository. Nothing has been imported into this repository yet.
+- The locomotion controller: the T800 project's RL walking policy, to be used as a baseline and not built here (§2.2). It is not yet evaluated.
+
+**What the source establishes, and what it does not**
+
+- It is a **simulation research prototype**. Its README states that there is no demonstrated hardware deployment and no learned end-to-end VLA policy.
+- Its demonstration is one recorded run. The README says explicitly that it is not a benchmark success rate.
+- Its perception uses the simulator's pose. Pose from the simulator is not a sensing result, and our design must not rely on it (`docs/02`).
+- Its semantic navigation targets **objects** (for example, a ball). It has no person-handling logic. A person must never become a search or approach target, and that exclusion must be enforced in the action layer, not only in the prompt. This follows the proposed constraint in §3, which is still unconfirmed.
+- Licences: the code is BSD-3 with upstream copyright retained. Third-party terms are **not checked**: the EngineAI SDK and documentation, the policy weights, Grounding DINO weights, and the VLM service.
+- Its Docker configuration is privileged and mounts host resources. Review before running it on the laptop.
+
+**Still open:** hardware access and the real robot's match to the model; the licence and provenance of the RL policies and SDK; how the model is brought into this repository (vendored, pinned as a submodule, or fetched at a pinned commit); whether the T800 shares the PM01 kinematic description; and legal items. Docs 00–02 are not revised by this decision.
