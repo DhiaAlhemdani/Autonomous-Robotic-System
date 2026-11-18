@@ -10,6 +10,6 @@ RUN apt-get update \
 USER robot
 # Pinned to the MuJoCo version the T800 project uses (3.2.3).
 RUN python3 -m venv /home/robot/simvenv \
- && /home/robot/simvenv/bin/pip install --no-cache-dir mujoco==3.2.3 numpy==1.26.4
+ && /home/robot/simvenv/bin/pip install --no-cache-dir mujoco==3.2.3 numpy==1.26.4 scipy==1.13.1 pytest==8.3.3
 ENV PATH=/home/robot/simvenv/bin:$PATH
 WORKDIR /home/robot/ws

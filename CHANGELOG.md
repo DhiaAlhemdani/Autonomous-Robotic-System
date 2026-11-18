@@ -2,6 +2,22 @@
 
 All notable changes to this design record. Format inspired by Keep a Changelog; the project is pre-implementation, so entries are design records rather than releases.
 
+## [0.9.0] — 2026-11-18 — Stage 0: constant-velocity NMPC in simulation
+
+**Added**
+
+- `planning/stage0/`: planar double-integrator NMPC (SLSQP) with Gaussian-margin separation constraints, constant-velocity predictor, scripted S2 scenario, and seeded runner. Parameters in `config.py` are marked as assumptions.
+- `planning/tests/test_stage0.py`: six tests (prediction, z-quantile, free-space goal, separation margin, infeasible brake fallback, seed reproducibility). Run in CI.
+- `docs/13-stage0-report.md`: method, assumptions and sandbox results. Result: 98% goal reached over 50 seeds; 9.5% of steps infeasible; solve p50 122 ms, p99 1.12 s on the sandbox. The rate is not determined; the solve time is above the 20–50 ms design budget for this solver.
+- `README.md`: doc-map rows for docs 11, 12 and 13.
+
+**Changed**
+
+- `docker/sim/Dockerfile`: pins scipy 1.13.1 and pytest 8.3.3.
+- `.github/workflows/skeleton.yml`: runs the Stage 0 tests.
+
+**Not done:** no solver diagnosis yet (infeasible-step causes unknown); no laptop measurement; no reacting-person scenario; no hardware.
+
 ## [0.8.0] — 2026-11-18 — Simulation image: T800 model loads
 
 **Added**
