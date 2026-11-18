@@ -2,6 +2,14 @@
 
 All notable changes to this design record. Format inspired by Keep a Changelog; the project is pre-implementation, so entries are design records rather than releases.
 
+## [0.7.6] — 2026-11-18 — Shared IPC namespace for ROS services
+
+**Fixed**
+
+- `docker-compose.yml`: ROS services use `ipc: host`. Containers that shared the network but not IPC discovered each other's topics but received no messages.
+
+**Not yet verified:** the two-container heartbeat test after this change.
+
 ## [0.7.5] — 2026-11-18 — ROS 2 on PATH for login shells
 
 **Fixed**

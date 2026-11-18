@@ -3,6 +3,9 @@
 # Profiles: 'sim-only' is the only profile implemented so far.
 x-ros-common: &ros-common
   network_mode: host          # docs/03 §2: default for simulation on Linux
+  # Separate IPC namespaces stop ROS 2 (Fast DDS) shared-memory transport between containers:
+  # discovery works, but messages do not arrive. Sharing the IPC namespace fixes this.
+  ipc: host
   environment:
     - ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-42}
 
