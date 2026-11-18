@@ -2,6 +2,20 @@
 
 All notable changes to this design record. Format inspired by Keep a Changelog; the project is pre-implementation, so entries are design records rather than releases.
 
+## [0.7.0] — 2026-10-14 — Development environment skeleton
+
+**Added**
+
+- `docker/base/Dockerfile`: Ubuntu 24.04 with ROS 2 Jazzy base install and a non-root user. Fail-closed on missing `BASE_IMAGE` or `ROS_APT_SOURCE_VERSION`.
+- `docker/dev/Dockerfile` and `docker-compose.yml`: build services and the `sim-only` profile, with host networking (`docs/03` §2).
+- `scripts/pin_base_digest.sh`: pins the base image by digest and the ROS apt-source version into the git-ignored `.env`.
+- `ros2_ws/src/ars_bringup`: heartbeat node publishing `/heartbeat` at 1 Hz. A toolchain smoke test with no safety function.
+- `scripts/check_skeleton.sh`: static checks (required files, no floating tags, scripts and Python parse, secret scan).
+- `docker/README.md`: laptop steps.
+- `.gitignore`: runs, data, models, artifacts and build outputs (`docs/03` §4).
+
+**Not yet done:** the image has not been built or run. The `sim`, `control`, `ml-train`, `ml-deploy` and `ci` images, CI, and the Python lockfile are still to be written. Maintainer email is a placeholder.
+
 ## [0.6.1] — 2026-10-14 — Public humanoid projects
 
 **Added**

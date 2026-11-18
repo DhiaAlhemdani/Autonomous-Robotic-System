@@ -1,0 +1,35 @@
+# Compose file for the development environment (docs/03 §2).
+# Images are built from the Dockerfiles in docker/; base image pinned via .env.
+# Profiles: 'sim-only' is the only profile implemented so far.
+x-ros-common: &ros-common
+  network_mode: host          # docs/03 §2: default for simulation on Linux
+  environment:
+    - ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-42}
+
+services:
+  base:
+    build:
+      context: .
+      dockerfile: docker/base/Dockerfile
+      args:
+        BASE_IMAGE: ${BASE_IMAGE:?set BASE_IMAGE in .env (run scripts/pin_base_digest.sh)}
+        ROS_APT_SOURCE_VERSION: ${ROS_APT_SOURCE_VERSION:?set in .env}
+    image: ars/base:local
+    entrypoint: ["/bin/true"]   # build-only service
+
+  dev:
+    <<: *ros-common
+    build:
+      context: .
+      dockerfile: docker/dev/Dockerfile
+      args:
+        BASE_IMAGE_TAG: ars/base:local
+    image: ars/dev:local
+    depends_on: [base]
+    profiles: ["sim-only"]
+    working_dir: /home/robot/ws
+    volumes:
+      - ./ros2_ws:/home/robot/ws
+    command: ["bash"]
+    stdin_open: true
+    tty: true
