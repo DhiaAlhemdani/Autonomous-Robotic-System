@@ -191,7 +191,16 @@ Solve time, each run alone on the sandbox (10 seeds):
 
 **What this shows.** The candidate reduces jerk by about 19% on 50 seeds (26% on the sweep) and lateral acceleration by about 17%. It does not reduce any safety metric; the differences in violation and freezing episodes on 50 seeds are two episodes and are not significant. The infeasible fraction falls, which is consistent with smoother solutions being easier to solve, but this is not established.
 
-**What this costs.** The median solve time roughly doubles, from 43 ms to 91 ms on this sandbox. The p99 is similar. The candidate is therefore not the default. Whether the extra compute is acceptable depends on the L3 rate, which is still undetermined (`docs/02` §9.2).
+**What this costs.** The median solve time roughly doubles, from 43 ms to 91 ms on this sandbox with analytic gradients. The p99 is similar. Whether the extra compute is acceptable depends on the L3 rate, which is still undetermined (`docs/02` §9.2).
+
+**Adopted as the default (2026-11-18, project owner decision).** `w_jerk` = 2.0 and `w_lat` = 2.0 are now the defaults in `config.py`. Runs in §§1–12 used 0.5 / 0 and are kept as recorded. Like-for-like comparison with the default finite-difference solver, seeds 0–19, each run alone on the sandbox:
+
+| Setting (finite-difference gradients) | Goal | Violation eps. | Infeasible steps | Solve p50 | Solve p99 | Jerk RMS | Lateral RMS |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 0.5 / 0 (previous default) | 100% | 0% | 6.7% | 120 ms | 1.06 s | 5.24 | 0.34 |
+| 2 / 2 (new default) | 100% | 0% | 3.8% | 229 ms | 1.10 s | 3.69 | 0.26 |
+
+So under the default solver the median solve time is about 1.9× the previous default, and the p99 is unchanged. The solve time is still well above the 20–50 ms design budget, with or without this change. The analytic-gradient option (§12) is the route to lower solve time, and it remains opt-in.
 
 **What this does not show.** It does not show that the motion is comfortable for people. Jerk and lateral acceleration are proxies for comfort, and the thresholds for comfort are not defined in the docs. It does not show any effect on real hardware.
 

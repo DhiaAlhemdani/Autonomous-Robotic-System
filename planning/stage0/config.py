@@ -34,10 +34,10 @@ class Stage0Config:
     # Cost weights (tracking, effort, comfort)
     w_goal: float = 10.0
     w_effort: float = 0.1
-    w_jerk: float = 0.5
-    # Lateral acceleration (theory 09 §2 comfort term), relative to the current heading.
-    # Default 0 keeps earlier results reproducible; set by the smoothness sweep.
-    w_lat: float = 0.0
+    # Smoothness (theory 09 §2 comfort term). Set in docs/13 §13 (sweep and 50-seed check).
+    # Runs in docs/13 §§1–12 used w_jerk 0.5 / w_lat 0; those results are kept as recorded.
+    w_jerk: float = 2.0   # ASSUMPTION, chosen by sweep
+    w_lat: float = 2.0    # lateral acceleration vs current heading. ASSUMPTION, chosen by sweep
 
     @property
     def z_delta(self) -> float:

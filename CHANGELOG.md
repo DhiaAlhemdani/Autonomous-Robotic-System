@@ -6,12 +6,12 @@ All notable changes to this design record. Format inspired by Keep a Changelog; 
 
 **Added**
 
-- `Stage0Config.w_lat` (lateral acceleration term; default 0, so earlier results reproduce). Analytic gradient included and tested.
+- `Stage0Config.w_lat` (lateral acceleration term; default 2.0). Analytic gradient included and tested.
 - Smoothness metrics in the runner summary: jerk RMS and p95, lateral RMS, peak acceleration. Measured from executed commands.
 - `run.py --jerk --lat --effort` overrides.
 - `docs/13` §13: sweep and 50-seed validation. Candidate (w_jerk 2, w_lat 2): jerk −19%, lateral −17%, no safety regression on 50 seeds, median solve time ~2× (43 → 91 ms).
 
-**Not changed:** all constraints; the default weights. The candidate is not the default pending a decision on solve time.
+**Changed:** default `w_jerk` 0.5 → 2.0 and `w_lat` 0 → 2.0 (project owner decision). All constraints unchanged. Under the default finite-difference solver, median solve time 120 → 229 ms (sandbox, seeds 0–19); infeasible steps 6.7% → 3.8%; jerk RMS −30%.
 
 ## [0.9.4] — 2026-11-18 — Stage 0 step 3: analytic gradients (opt-in)
 
