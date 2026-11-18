@@ -30,5 +30,12 @@ def main(args=None) -> None:
     except KeyboardInterrupt:
         pass
     finally:
+        # On Ctrl-C, rclpy may already have shut the context down (it installs its own
+        # SIGINT handler). Calling shutdown twice raises RCLError, so guard it.
         node.destroy_node()
-        rclpy.shutdown()
+        if rclpy.ok():
+            rclpy.shutdown()
+
+
+if __name__ == '__main__':
+    main()

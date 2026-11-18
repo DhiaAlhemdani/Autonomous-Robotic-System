@@ -2,6 +2,16 @@
 
 All notable changes to this design record. Format inspired by Keep a Changelog; the project is pre-implementation, so entries are design records rather than releases.
 
+## [0.7.2] — 2026-11-18 — Heartbeat shutdown fix
+
+**Fixed**
+
+- `heartbeat.py`: Ctrl-C no longer crashes with `rcl_shutdown already called`. Shutdown now runs only if rclpy is still running.
+
+**Changed**
+
+- `.gitignore`: ignores `build/`, `install/` and `log/` at the repository root, in case `colcon build` is run from there.
+
 ## [0.7.1] — 2026-11-18 — Skeleton fix: executable install path
 
 **Fixed**
