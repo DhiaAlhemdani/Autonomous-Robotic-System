@@ -36,6 +36,27 @@ services:
     command: ["python", "/home/robot/scripts/check_t800_model.py", "/home/robot/t800"]
 
 
+  dashboard:
+    # Python dashboard for the T800 planar-base NMPC (sim/dashboard). Open http://localhost:8050.
+    # Bridge networking with a published port: works on Linux, macOS and Windows Docker Desktop.
+    build:
+      context: .
+      dockerfile: docker/sim/Dockerfile
+      args:
+        BASE_IMAGE_TAG: ars/base:local
+    image: ars/sim:local
+    depends_on: [base]
+    profiles: ["sim-only"]
+    working_dir: /home/robot
+    ports:
+      - "8050:8050"
+    volumes:
+      - ./sim:/home/robot/sim:ro
+      - ./planning:/home/robot/planning:ro
+      - ./third_party/T800-PROJECT:/home/robot/third_party/T800-PROJECT:ro
+    command: ["python", "/home/robot/sim/dashboard/app.py", "--host", "0.0.0.0", "--port", "8050"]
+
+
   dev:
     <<: *ros-common
     build:

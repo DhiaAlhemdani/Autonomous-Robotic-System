@@ -19,6 +19,20 @@ Open http://localhost:8050. Set a seed and a maximum time, then press **Start ep
 
 Requirements: Python 3.10–3.12 (MuJoCo 3.2.3 wheels), and the T800 submodule. Port 8050 is the default. The sandbox preview uses `--host 0.0.0.0`.
 
+## Run in Docker (recommended on your machine)
+
+The sim image now includes Dash and Plotly, and compose has a `dashboard` service in the `sim-only` profile. Your `.env` must already be set up for the base image (see `docker/README.md`).
+
+```
+git submodule update --init --depth 1 third_party/T800-PROJECT
+docker compose --profile sim-only build base dashboard
+docker compose --profile sim-only up dashboard
+```
+
+Open http://localhost:8050. The repo's `sim/`, `planning/` and the T800 submodule are mounted read-only, so editing the code on the host needs a restart of the service, not a rebuild.
+
+Not yet run: this Docker path was written and checked for paths and YAML syntax only. Docker is not available in the sandbox, so the image was not built. Please report any build or run error.
+
 ## Tests run in the sandbox
 
 - A 3 s run completes, and the scene, KPI and chart builders run on its output.

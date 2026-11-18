@@ -13,6 +13,8 @@ All notable changes to this design record. Format inspired by Keep a Changelog; 
 
 - `sim/t800/planar_base.py`: episode loop moved into `run_episode(args, on_step, stop)`. Seed-0 result unchanged (90 steps, tilt 3.21°, closest person 1.95 m). Missing-model error is explicit.
 
+**Docker:** `docker/sim/Dockerfile` adds Dash and Plotly pins; `docker-compose.yml` has a `dashboard` service (profile `sim-only`, port 8050, read-only mounts of `sim/`, `planning/` and the T800 submodule). Not built in the sandbox (no Docker there); paths verified with a copied container layout.
+
 **Replaced within this version:** an earlier FastAPI + browser-canvas dashboard that was never released. The browser version was removed.
 
 **Not verified:** the rendered layout in a browser (none in the sandbox). Callbacks, stop behaviour, and the layout endpoints were tested directly.
