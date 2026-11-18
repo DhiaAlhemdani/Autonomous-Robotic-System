@@ -1,0 +1,3 @@
+[submodule "third_party/T800-PROJECT"]
+	path = third_party/T800-PROJECT
+	url = https://github.com/DhiaAlhemdani/T800-PROJECT.git

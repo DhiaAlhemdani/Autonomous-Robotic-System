@@ -85,4 +85,6 @@ Public datasets were searched (see the conversation record for details). No huma
 - Licences: the code is BSD-3 with upstream copyright retained. Third-party terms are **not checked**: the EngineAI SDK and documentation, the policy weights, Grounding DINO weights, and the VLM service.
 - Its Docker configuration is privileged and mounts host resources. Review before running it on the laptop.
 
-**Still open:** hardware access and the real robot's match to the model; the licence and provenance of the RL policies and SDK; how the model is brought into this repository (vendored, pinned as a submodule, or fetched at a pinned commit); whether the T800 shares the PM01 kinematic description; and legal items. Docs 00–02 are not revised by this decision.
+**Still open:** hardware access and the real robot's match to the model; the licence and provenance of the RL policies and SDK; how the model is brought into this repository (**decided: git submodule at `third_party/T800-PROJECT`, pinned to commit `8bfd5b4`**, see below); whether the T800 shares the PM01 kinematic description; and legal items. Docs 00–02 are not revised by this decision.
+
+**Model import (2026-11-18):** the T800 repository is a git submodule at `third_party/T800-PROJECT`, pinned to commit `8bfd5b45b571ae6fc8f8c98629c0696e9a4b85c7`. Its working tree is about 230 MB of assets, so clone with `git submodule update --init --depth 1`. Updating the pin is a deliberate change, recorded in the changelog. The licence notice in `LICENSE.txt` of that repository applies to its contents.
