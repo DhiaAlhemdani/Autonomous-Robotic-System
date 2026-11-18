@@ -2,19 +2,20 @@
 
 All notable changes to this design record. Format inspired by Keep a Changelog; the project is pre-implementation, so entries are design records rather than releases.
 
-## [0.11.0] — 2026-11-18 — Real-time dashboard for the T800 planar NMPC
+## [0.11.0] — 2026-11-18 — Python dashboard for the T800 planar NMPC
 
 **Added**
 
-- `sim/dashboard/server.py`: FastAPI server. Runs one episode at a time in a background thread and streams every control step over a WebSocket. Endpoints: `POST /api/run`, `GET /api/status`, `WS /ws`.
-- `sim/dashboard/static/`: plain-canvas page (no external libraries) with the top-down scene and five live charts, plus headline numbers including the measured real-time factor.
-- `sim/dashboard/requirements.txt`, `sim/dashboard/README.md`.
+- `sim/dashboard/app.py`: Dash + Plotly dashboard. Runs one episode at a time in a background thread (`planar_base.run_episode`), refreshes every 500 ms, and has start and stop controls. Shows the scene from above, five charts, and headline numbers including the measured real-time factor. Run with `python sim/dashboard/app.py --host 0.0.0.0 --port 8050`.
+- `sim/dashboard/requirements.txt` (`mujoco 3.2.3`, `numpy 1.26.4`, `scipy 1.13.1`, `dash 4.5.0`, `plotly 7.1.0`), `sim/dashboard/README.md`.
 
 **Changed**
 
-- `sim/t800/planar_base.py`: the episode loop moved into `run_episode(args, on_step, stop)`. The seed-0 result is unchanged (90 steps, tilt 3.21°, closest person 1.95 m). Missing-model error is now explicit.
+- `sim/t800/planar_base.py`: episode loop moved into `run_episode(args, on_step, stop)`. Seed-0 result unchanged (90 steps, tilt 3.21°, closest person 1.95 m). Missing-model error is explicit.
 
-**Not verified:** the page layout in a browser (none in the sandbox). The stream was tested end to end with a Python WebSocket client.
+**Replaced within this version:** an earlier FastAPI + browser-canvas dashboard that was never released. The browser version was removed.
+
+**Not verified:** the rendered layout in a browser (none in the sandbox). Callbacks, stop behaviour, and the layout endpoints were tested directly.
 
 ## [0.10.0] — 2026-11-18 — T800 planar base under NMPC (simulation)
 

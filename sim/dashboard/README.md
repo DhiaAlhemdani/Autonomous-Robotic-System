@@ -1,30 +1,37 @@
-# Real-time dashboard: T800 planar base under NMPC
+# Python dashboard: T800 planar base under NMPC
 
-Browser dashboard for `sim/t800/planar_base.py`. It runs one episode at a time in a background thread and streams every control step over a WebSocket.
+Dash + Plotly dashboard for `sim/t800/planar_base.py`. It runs one episode at a time in a background thread, and the page refreshes every 500 ms.
 
-**Shows:** the scene from above (robot pelvis and trail, persons with their keep-out rings, objects, goal, commanded acceleration); live charts for NMPC solve time, pelvis tilt, distance to the nearest person and object, speed and tracking error, and commanded acceleration; headline numbers (max tilt, closest person, violation steps, solve p50/p99, infeasible fraction, tracking error, real-time factor).
+**Shows:** the scene from above (robot pelvis and path, persons with keep-out rings, objects, goal, commanded acceleration); charts for NMPC solve time, pelvis tilt, distance to the nearest person and object, speed with tracking error, and commanded acceleration; headline numbers, including the measured real-time factor.
 
-**Not shown:** a 3D render. The MuJoCo viewer needs a display, so it is not used here.
+## Run on a laptop or the sandbox
 
-## Run
+From the repository root:
 
 ```
-pip install -r sim/dashboard/requirements.txt   # plus the T800 submodule (see sim/t800/README.md)
-cd sim/dashboard && python -m uvicorn server:app --host 0.0.0.0 --port 8000
+git submodule update --init --depth 1 third_party/T800-PROJECT
+python3 -m venv .venv-dash && . .venv-dash/bin/activate
+pip install -r sim/dashboard/requirements.txt
+python sim/dashboard/app.py --host 0.0.0.0 --port 8050
 ```
 
-Open the page on port 8000. Set a seed and a maximum time, then press **Start episode**. A new browser connection receives the current run from the beginning.
+Open http://localhost:8050. Set a seed and a maximum time, then press **Start episode**. **Stop** ends the current run early.
 
-API:
+Requirements: Python 3.10–3.12 (MuJoCo 3.2.3 wheels), and the T800 submodule. Port 8050 is the default. The sandbox preview uses `--host 0.0.0.0`.
 
-- `POST /api/run?seed=N&max_time=T` starts a run (stops the current one).
-- `GET /api/status` shows the run ID and state.
-- `WS /ws` streams `meta`, `step`, `done` or `error` messages.
+## Tests run in the sandbox
+
+- A 3 s run completes, and the scene, KPI and chart builders run on its output.
+- A 30 s run stopped after about 6 s ends with `stopped: true`.
+- A new run started after a stop is not stopped by the previous run's stop request.
+- The Dash layout and all three callbacks are registered (`/_dash-layout`, `/_dash-dependencies`).
+
+Not checked: the rendered layout in a browser (none is available in the sandbox).
 
 ## Honesty notes
 
-- The real-time factor is measured. In the sandbox, one simulated second takes about 3 wall-clock seconds, because the NMPC solve (about 0.25–0.5 s) runs at 10 Hz. The page does not claim real time.
-- Solve times and the real-time factor are sandbox measurements, not target-hardware numbers.
+- The real-time factor is measured here. In the sandbox one simulated second takes about 3–5 wall seconds, because each NMPC solve takes 0.25–0.6 s at 10 Hz. The dashboard does not claim real time.
+- Solve times are measurements on the machine that runs the dashboard, not target-hardware numbers.
 - The base is driven by a weld to a mocap body. The legs hold a PD standing pose. Nothing balances or walks.
-- Persons don't react to the robot, as in Stage 0.
-- The browser layout was not checked visually: no browser is available in the sandbox. The page was checked for syntax and served over HTTP, and the WebSocket stream was tested end to end with a Python client.
+- Persons do not react to the robot (Stage 0 scenario S2).
+- The `d_min` values are ASSUMPTIONs from `planning/stage0/config.py`.

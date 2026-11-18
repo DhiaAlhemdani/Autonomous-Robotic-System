@@ -1,7 +1,6 @@
-# Versions used in the sandbox run (docs/13-adjacent sim work). Pin again when the image is built.
+# Versions used for the sandbox test of the dashboard. Pin again when the image is built.
 mujoco==3.2.3
 numpy==1.26.4
 scipy==1.13.1
-fastapi==0.165.0
-uvicorn==0.54.0
-websockets==17.4
+dash==4.5.0
+plotly==7.1.0
