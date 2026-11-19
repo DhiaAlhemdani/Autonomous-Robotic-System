@@ -156,7 +156,9 @@ def main():
     import mujoco.viewer  # noqa: F401  (needs a display)
 
     try:
+        print(f"3D window: opening on DISPLAY={os.environ.get('DISPLAY')}", flush=True)
         with mujoco.viewer.launch_passive(r.m, r.d) as viewer:
+            print("3D window: open (closing it ends the run; the dashboard stays up)", flush=True)
             wall0 = time.perf_counter()
             last_print = -1
             while viewer.is_running():
