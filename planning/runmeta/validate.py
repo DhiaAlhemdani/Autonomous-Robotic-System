@@ -43,8 +43,11 @@ def problems(meta):
 
 
 def check_file(path):
-    with open(path) as f:
-        data = json.load(f)
+    try:
+        with open(path) as f:
+            data = json.load(f)
+    except (OSError, json.JSONDecodeError) as e:
+        return [f"unreadable: {e}"]
     meta = data.get("meta")
     if meta is None:
         return ["no meta block"]
