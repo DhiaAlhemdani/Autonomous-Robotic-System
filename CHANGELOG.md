@@ -2,6 +2,17 @@
 
 All notable changes to this design record. Format inspired by Keep a Changelog; the project is pre-implementation, so entries are design records rather than releases.
 
+## [Unreleased] — Dashboard removed
+
+**Removed (undoes the dashboard work in [0.11.0] and the T800 dashboard commits after [0.13.0]):**
+
+- `sim/dashboard/` (Dash app, its requirements and README), and `sim/t800/telemetry.py`.
+- The `dashboard` compose service, the viewer's port 8050 and dashboard arguments, and the Dash and Plotly pins in `docker/sim/Dockerfile`.
+- The dashboard checks and browser step in `scripts/run_viewer.sh`.
+- `BalanceController.last_cmd` in `sim/t800/balance.py` (restored to the `[0.13.0]` version).
+
+**Kept:** the 3D viewer, which reopens after the window is closed; `--headless`; the planar base under NMPC (`sim/t800/planar_base.py`) and its results.
+
 ## [0.13.0] — 2026-11-18 — Native MuJoCo viewer for the free-standing T800
 
 **Added**

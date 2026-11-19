@@ -1,6 +1,0 @@
-# Versions used for the sandbox test of the dashboard. Pin again when the image is built.
-mujoco==3.2.3
-numpy==1.26.4
-scipy==1.13.1
-dash==4.5.0
-plotly==7.1.0
