@@ -107,6 +107,39 @@ class Robot:
 HIP_PITCH = ["J00_HIP_PITCH_L", "J06_HIP_PITCH_R"]
 
 
+DEFAULT_CFG = dict(sign=+1.0, kc=3.0, kv=0.5, hip_sign=+1.0, kh=2.0, ki=0.0)
+
+
+class BalanceController:
+    """One control step of the free-base standing law (ankle CoM + hip pitch). Shared by tests and viewer."""
+
+    def __init__(self, r, cfg=None, kp=600.0, kd=20.0):
+        self.r = r
+        self.cfg = dict(DEFAULT_CFG, **(cfg or {}))
+        self.kp, self.kd = kp, kd
+        self.dt = r.m.opt.timestep
+        self.prev = r.com_error()
+        self.integ = np.zeros(2)
+
+    def reset(self):
+        self.prev = self.r.com_error()
+        self.integ = np.zeros(2)
+
+    def step(self, ext_force=None):
+        """Compute the joint targets from the current state, then advance one physics step."""
+        r, cfg, dt = self.r, self.cfg, self.dt
+        e = r.com_error()
+        ev = (e - self.prev) / dt
+        self.prev = e
+        self.integ = self.integ + e * dt
+        cmd = {n: cfg["sign"] * (cfg["kc"] * e[0] + cfg["kv"] * ev[0] + cfg["ki"] * self.integ[0])
+               for n in ANKLE_PITCH}
+        hip = cfg["hip_sign"] * cfg["kh"] * r.pitch_rad()
+        for n in HIP_PITCH:
+            cmd[n] = hip
+        r.step(self.kp, self.kd, ankle_cmd=cmd)
+
+
 def run(sign, kc, kv, kp, kd, T, robot=None, hip_sign=0.0, kh=0.0, ki=0.0):
     r = robot or Robot()
     r.reset()

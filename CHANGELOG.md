@@ -2,6 +2,16 @@
 
 All notable changes to this design record. Format inspired by Keep a Changelog; the project is pre-implementation, so entries are design records rather than releases.
 
+## [0.13.0] — 2026-11-18 — Native MuJoCo viewer for the free-standing T800
+
+**Added**
+
+- `sim/t800/viewer.py`: opens MuJoCo's 3D window and runs the Stage A standing controller on the free-standing T800, with optional timed pushes. `--headless` runs the same loop without a window.
+- `sim/t800/balance.py`: `BalanceController` class, shared by the tests and the viewer. Same results as before (quiet hold, final tilt 3.4°).
+- `sim/t800/README.md`: laptop instructions and expected behaviour.
+
+**Not verified:** the window itself (no display in the sandbox). The headless path was run.
+
 ## [0.12.0] — 2026-11-18 — T800 free-base standing: ankle and hip feedback (simulation)
 
 **Added**

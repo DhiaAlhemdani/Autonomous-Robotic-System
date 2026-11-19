@@ -79,3 +79,21 @@ Open questions and caveats:
 - **Gains are selected on the same pushes used to report them.** Treat the push results as a check on the chosen gains, not as held-out evidence.
 - Only 1 contact-free test per push direction; no noise, delay or model error. This is simulation only.
 
+## Native 3D viewer (run on your laptop)
+
+`viewer.py` opens MuJoCo's own 3D window and runs the Stage A standing controller on the free-standing T800. Run it natively, not in Docker, because the window needs a display.
+
+```
+git submodule update --init --depth 1 third_party/T800-PROJECT
+python3 -m venv .venv-viewer && . .venv-viewer/bin/activate
+pip install mujoco==3.2.3 numpy==1.26.4
+python sim/t800/viewer.py                            # stand; no push
+python sim/t800/viewer.py --push-x -150 --push-t 5    # 150 N backward push at 5 s
+```
+
+Options: `--push-x`, `--push-y` (N), `--push-t` (start, s), `--push-dur` (s, default 0.2), `--T` (stop after T s). Close the window to exit.
+
+Expected behaviour, from the sandbox headless run: quiet standing holds with a final tilt of 3.4°. The 150 N backward push at 5 s makes the robot fall at about 6.6 s. The window is not checked in the sandbox (no display there), so please report anything that looks wrong in the window.
+
+Headless check (no window, runs anywhere): `python sim/t800/viewer.py --headless --T 10`.
+
