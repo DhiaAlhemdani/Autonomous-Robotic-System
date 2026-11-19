@@ -94,6 +94,13 @@ def main():
                     help="finite-difference SLSQP gradients (baseline); default is analytic")
     args = ap.parse_args()
     res = run_episode(args)
+    from dataclasses import asdict
+    from runmeta.collect import collect_meta  # docs/02 §7: every result carries a run record
+    cfg_dict = asdict(Stage0Config())
+    cfg_dict.update({"sim": {"kp": args.kp, "kd": args.kd, "weld_solref": args.weld_solref,
+                              "settle_s": args.settle, "max_time_s": args.max_time,
+                              "solver": "slsqp", "analytic_gradients": not args.fd}})
+    res["meta"] = collect_meta("stage0_planar_scene", args.seed, cfg_dict)
     text = json.dumps(res, indent=2)
     print(text)
     if args.out:
