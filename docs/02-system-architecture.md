@@ -215,4 +215,36 @@ All candidates are compared on identical runs of scenarios S1–S5 (`docs/00` §
 - **Basis:** `docs/11` §2 (consequences of the platform change), §7 (T800 platform decision). `docs/11` §2.1 and §2.2 name the superseded items marked above.
 - **Superseded:** the wheel-based control references, the wheel-drive FOC cascade, wheel odometry and encoders, the wheel bridge, the MCU joint-sensing assumptions, and the wheeled interface frame. Each is marked in place.
 - **Not yet specified:** the joint-level architecture for the humanoid, including the locomotion layer. This is a separate design task. Until it exists, no interface is frozen for the humanoid, and the interface freeze in §8 does not apply to the superseded items.
+- **Draft added (§11):** humanoid layer mapping to `docs/14`, with four conflicts with §§1, 2, 6 recorded. The conflicts are not yet resolved in the text above.
 - **Unchanged:** the layer model as a structure, the degradation ladder (§6), the logging architecture (§7), the timing rules (§4), and the perception and planning contract in §9, which remains a proposal under review.
+
+## 11. Humanoid layer model (draft, maps to `docs/14`)
+
+> **Status: draft, not frozen.** This section starts the humanoid revision that §10 says is not yet done. The joint-level detail is in [`docs/14`](docs/14-humanoid-joint-architecture.md). Nothing here is validated, and the rules of §§1–8 apply to the humanoid only where this section says so.
+
+### 11.1 Mapping
+
+The humanoid has no wheel drive, so the layer numbers of §1 do not carry over. Numbers below are the humanoid's own layers, from `docs/14` §2. The old §1 numbers are given for traceability.
+
+| Humanoid layer (`docs/14`) | Rate (draft) | Replaces (§1) | Note |
+| --- | --- | --- | --- |
+| **L5 Navigation & command shaping** | 10–20 Hz | L3 (NMPC output) | Output is body-frame `(vx, vy, ω)` for the locomotion layer, not `(v, ω)` for a wheel base |
+| **L4 Locomotion (balance & gait)** | 100 Hz | none | New. The baseline is the upstream RL walking policy, not evaluated here |
+| **L3 Joint servo / actuation** | ≥ 1 kHz (target) | L1 (FOC) | Joint PD and torque limits. Replaces the FOC cascade; the rate is a target, not verified |
+| **L2 State estimation** | 100–1000 Hz | L0 (odometry) | IMU, joint states and foot contact. Wheel odometry is removed |
+| **L1 Safety supervisor** | 50–200 Hz | L2 (safety filter) | Independent of L4–L5. Holds veto power, as in §1 |
+
+L0 perception (LiDAR, camera) and the planning layers L4–L5 of §1 are kept as the sensing and planning structure. Their humanoid rates are to be re-checked.
+
+### 11.2 Conflicts with the existing text
+
+1. **Numbering.** §1 uses L1 for drive and L2 for the safety filter. §11 uses L1 for the supervisor and L3 for the joint servo. Until §1 is rewritten, the two numberings must not be mixed in one document. The conflict is kept, not resolved, here.
+2. **Heartbeat loss (§2).** The rule "loss of heartbeat ⇒ MCU ramps torque to zero" is unsafe for a humanoid. Ramping torque to zero makes an upright robot fall. For the humanoid, heartbeat loss must enter the fall-handling states of `docs/14` §4 (S2 hold, S3 fall mitigation, S4 torque off), not a direct ramp to zero. This is a required change to §2.
+3. **Safe stop (§6).** "Torque removed, brakes engaged" does not apply. A humanoid has no brakes. Its safe stop is the state chosen in `docs/14` §4, which is a proposal awaiting the project owner's decision (O4).
+4. **Compute allocation (§2).** Doc 02 places L1 current control on the MCU. Where the humanoid's joint servo runs (MCU or edge computer) is not decided. The timing requirement is in `docs/14` §2.1.
+
+### 11.3 Not decided here
+
+- Whether the joint servo (L3) runs on the MCU or the edge computer.
+- The data and logging formats for the humanoid (§7 is superseded for the MCU frame format).
+- Whether the RL mission policy (L5 in §1) remains a learned layer above the navigation layer. This is a scope question, not an architecture change, and is left to `docs/00`.
