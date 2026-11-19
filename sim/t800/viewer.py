@@ -144,23 +144,38 @@ def main():
         hold_dashboard()
         return
 
+    if not os.environ.get("DISPLAY"):
+        # MuJoCo's C code exits the process when GLFW cannot open a display, so check first and
+        # keep the dashboard up with the reason on the page.
+        msg = "no DISPLAY: 3D window not opened (use scripts/run_viewer.sh, or --headless)"
+        print(msg, flush=True)
+        TL.set_state("error", message=msg)
+        hold_dashboard()
+        return
+
     import mujoco.viewer  # noqa: F401  (needs a display)
 
-    with mujoco.viewer.launch_passive(r.m, r.d) as viewer:
-        wall0 = time.perf_counter()
-        last_print = -1
-        while viewer.is_running():
-            if args.T and t >= args.T:
-                break
-            run_loop_step(t)
-            t += dt
-            viewer.sync()
-            if int(t) != last_print:
-                last_print = int(t)
-                status(t)
-            ahead = t - (time.perf_counter() - wall0)
-            if ahead > 0:
-                time.sleep(ahead)
+    try:
+        with mujoco.viewer.launch_passive(r.m, r.d) as viewer:
+            wall0 = time.perf_counter()
+            last_print = -1
+            while viewer.is_running():
+                if args.T and t >= args.T:
+                    break
+                run_loop_step(t)
+                t += dt
+                viewer.sync()
+                if int(t) != last_print:
+                    last_print = int(t)
+                    status(t)
+                ahead = t - (time.perf_counter() - wall0)
+                if ahead > 0:
+                    time.sleep(ahead)
+    except Exception as exc:  # keep the dashboard up so the error shows on the page
+        print(f"3D window failed: {exc!r}. Dashboard stays up (Ctrl+C to exit).", flush=True)
+        TL.set_state("error", message=repr(exc))
+        hold_dashboard()
+        return
     if fell_at is None:
         TL.set_state("done", final_tilt=round(r.tilt_deg(), 3))
     hold_dashboard()

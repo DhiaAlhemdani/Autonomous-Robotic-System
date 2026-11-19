@@ -222,10 +222,23 @@ def build_app():
 
     app.layout = html.Div(style={"fontFamily": "system-ui, sans-serif", "background": "#f6f7f9",
                                  "padding": "12px 20px", "color": "#1c2330"}, children=[
-        html.H2("T800 planar base under NMPC", style={"margin": "0 0 4px"}),
+        html.H2("T800 balance run (free-standing, simulation only)", style={"margin": "0 0 4px"}),
+        html.Div("Fed by sim/t800/viewer.py (the same run as the 3D window). Empty until the viewer runs. "
+                 "Simulation only: no walking, no claim for large pushes, no hardware transfer.",
+                 style={"fontSize": "12px", "color": "#6b7585", "marginBottom": "6px"}),
+        html.H3("Balance run (free-standing T800, from the viewer)", style={"marginTop": "18px"}),
+        html.Div(id="b-state", style={"fontSize": "13px", "color": "#6b7585", "marginBottom": "6px"}),
+        html.Div(style={"display": "grid", "gridTemplateColumns": "repeat(auto-fit, minmax(420px, 1fr))",
+                        "gap": "10px"}, children=[
+            dcc.Graph(id="b-tilt", config={"displayModeBar": False}),
+            dcc.Graph(id="b-com", config={"displayModeBar": False}),
+            dcc.Graph(id="b-contacts", config={"displayModeBar": False}),
+        ]),
+        html.H2("Planar base under NMPC (separate scenario)", style={"margin": "24px 0 4px"}),
         html.Div("Simulation only. The base is driven by a weld to a mocap body; the legs hold a PD "
-                 "standing pose. No balance or walking. Rates are measured on this machine, not on "
-                 "target hardware.", style={"fontSize": "12px", "color": "#6b7585", "marginBottom": "10px"}),
+                 "standing pose. Not balance or walking. Rates are measured on this machine, not on "
+                 "target hardware. Start episode runs this scenario, not the balance run above.",
+                 style={"fontSize": "12px", "color": "#6b7585", "marginBottom": "10px"}),
         html.Div(style={"display": "flex", "gap": "12px", "alignItems": "center", "flexWrap": "wrap"}, children=[
             html.Label(["Seed ", dcc.Input(id="seed", type="number", value=0, min=0, max=10000, style={"width": "90px"})]),
             html.Label(["Max time (s) ", dcc.Input(id="max-time", type="number", value=30, min=1, max=120, style={"width": "90px"})]),
@@ -243,14 +256,6 @@ def build_app():
             dcc.Graph(id="c-person", config={"displayModeBar": False}),
             dcc.Graph(id="c-speed", config={"displayModeBar": False}),
             dcc.Graph(id="c-accel", config={"displayModeBar": False}),
-        ]),
-        html.H3("Balance run (free-standing T800, from the viewer)", style={"marginTop": "18px"}),
-        html.Div(id="b-state", style={"fontSize": "13px", "color": "#6b7585", "marginBottom": "6px"}),
-        html.Div(style={"display": "grid", "gridTemplateColumns": "repeat(auto-fit, minmax(420px, 1fr))",
-                        "gap": "10px"}, children=[
-            dcc.Graph(id="b-tilt", config={"displayModeBar": False}),
-            dcc.Graph(id="b-com", config={"displayModeBar": False}),
-            dcc.Graph(id="b-contacts", config={"displayModeBar": False}),
         ]),
         dcc.Interval(id="tick", interval=POLL_MS, n_intervals=0),
         html.Div("Stage 0 scenario S2: persons do not react to the robot. Solve times are sandbox "
@@ -320,6 +325,8 @@ def balance_panel():
     head = f"viewer state: {state} · samples: {n}"
     if meta.get("final_tilt") is not None:
         head += f" · final tilt {meta['final_tilt']:.1f}°"
+    if state == "error" and meta.get("message"):
+        head += f" · {meta['message']}"
     if state == "not started":
         head += " · start sim/t800/viewer.py to feed this panel"
     return [head, balance_tilt_figure(samples), balance_com_figure(samples), balance_contacts_figure(samples)]
