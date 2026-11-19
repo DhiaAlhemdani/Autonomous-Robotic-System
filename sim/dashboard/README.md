@@ -49,3 +49,7 @@ Not checked: the rendered layout in a browser (none is available in the sandbox)
 - The base is driven by a weld to a mocap body. The legs hold a PD standing pose. Nothing balances or walks.
 - Persons do not react to the robot (Stage 0 scenario S2).
 - The `d_min` values are ASSUMPTIONs from `planning/stage0/config.py`.
+
+## Balance panel (T800 standing)
+
+The panel reads the telemetry buffer that `sim/t800/viewer.py` writes in the same process. Run the viewer (`scripts/run_viewer.sh` in a container, or `python sim/t800/viewer.py` on a host venv) and the panel fills in. Without the viewer, it shows "not started".

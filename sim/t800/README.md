@@ -98,3 +98,19 @@ Expected behaviour, from the sandbox headless run: quiet standing holds with a f
 
 Headless check (no window, runs anywhere): `python sim/t800/viewer.py --headless --T 10`.
 
+
+## Linux laptop: viewer in a container (X11) with the dashboard
+
+Requires a Linux desktop session (X11, not Wayland-only) and Docker with the compose plugin.
+
+```bash
+scripts/run_viewer.sh
+```
+
+The script allows local X connections (`xhost +local:`), starts the `viewer` service (MuJoCo 3D window on your display, plus the Dash dashboard on port 8050), and opens http://localhost:8050 in your browser. Stop with `docker compose --profile sim-only stop viewer`.
+
+The dashboard's balance panel shows the live state written by the viewer: pelvis tilt and height, centre-of-mass error with the ankle command, and floor contacts per foot. Red bands mark the push. After the run ends, the dashboard stays up until you stop the container.
+
+Simulation only. Stage A is a free-standing balance test, not walking, and no claim is made about pushes beyond the table above or about hardware.
+
+Not tested in the build sandbox: the window path (no display there) and the X11 mount on a real laptop. The headless path and the dashboard startup were tested.

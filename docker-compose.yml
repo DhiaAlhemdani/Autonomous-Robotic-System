@@ -57,6 +57,36 @@ services:
     command: ["python", "/home/robot/sim/dashboard/app.py", "--host", "0.0.0.0", "--port", "8050"]
 
 
+  viewer:
+    # Free-standing T800 in MuJoCo's 3D window (sim/t800/viewer.py) + the Python dashboard on :8050.
+    # Linux host with X11 only: passes the host display through the X socket and /dev/dri for GL.
+    # Start with scripts/run_viewer.sh (it allows the local X connection and opens the dashboard).
+    # Do not run with the dashboard service at the same time: both publish port 8050.
+    build:
+      context: .
+      dockerfile: docker/sim/Dockerfile
+      args:
+        BASE_IMAGE_TAG: ars/base:local
+    image: ars/sim:local
+    depends_on: [base]
+    profiles: ["sim-only"]
+    working_dir: /home/robot
+    environment:
+      - DISPLAY=${DISPLAY:-}
+      - XAUTHORITY=/home/robot/.Xauthority
+    ports:
+      - "8050:8050"
+    devices:
+      - /dev/dri:/dev/dri
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - ${XAUTHORITY:-/dev/null}:/home/robot/.Xauthority:ro
+      - ./sim:/home/robot/sim:ro
+      - ./planning:/home/robot/planning:ro
+      - ./third_party/T800-PROJECT:/home/robot/third_party/T800-PROJECT:ro
+    command: ["python", "/home/robot/sim/t800/viewer.py", "--dashboard-host", "0.0.0.0", "--dashboard-port", "8050"]
+
+
   dev:
     <<: *ros-common
     build:

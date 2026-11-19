@@ -137,6 +137,7 @@ class BalanceController:
         hip = cfg["hip_sign"] * cfg["kh"] * r.pitch_rad()
         for n in HIP_PITCH:
             cmd[n] = hip
+        self.last_cmd = {"ankle": cmd[ANKLE_PITCH[0]], "hip": hip, "com_err": (float(e[0]), float(e[1]))}
         r.step(self.kp, self.kd, ankle_cmd=cmd)
 
 

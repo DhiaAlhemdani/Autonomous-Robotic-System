@@ -1,31 +1,52 @@
-"""Native MuJoCo 3D viewer for the free-standing T800 (sim/t800/balance.py controller).
+"""Free-standing T800 in MuJoCo, with an optional 3D window and the Python dashboard.
 
-Run this on your laptop, outside Docker: the viewer needs a display. Example:
+The balance controller (balance.py) runs on the free-base T800. Its state is written to a shared
+telemetry buffer (telemetry.py). The Python dashboard (sim/dashboard/app.py) runs in the same
+process on --dashboard-port and shows the live balance data.
 
-    python sim/t800/viewer.py                       # stand; no pushes
-    python sim/t800/viewer.py --push-x -150 --push-t 5     # 150 N backward push at 5 s
-    python sim/t800/viewer.py --headless --T 10     # no window: checks the loop (used in the sandbox)
+Run on a laptop with a display (native or Linux container with X11, see docker-compose.yml):
+
+    python sim/t800/viewer.py                          # 3D window + dashboard on :8050
+    python sim/t800/viewer.py --push-x -150 --push-t 5 # 150 N backward push at 5 s
+    python sim/t800/viewer.py --headless --T 10        # no window; dashboard still starts
 
 Pushes are horizontal forces on the pelvis, held for --push-dur seconds (default 0.2 s).
-The viewer runs at real time (one physics step per wall-clock step), so the rate you see is the
-simulation rate, not a measurement of the controller.
+The window runs at real time. That is the simulation rate, not a measurement of the controller.
 
-Simulation only. The controller is the free-base standing law from balance.py (ankle CoM and hip
-pitch feedback). It is not a validated balance controller and does not handle large pushes.
+Simulation only. The controller is not a validated balance controller and does not handle
+pushes above about 150 N.
 """
 import argparse
 import importlib.util
 import os
+import sys
+import threading
 import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)  # so `import telemetry` is the same module the dashboard imports
+sys.path.insert(0, os.path.join(HERE, "..", "dashboard"))
+from telemetry import TELEMETRY as TL  # noqa: E402  (shared buffer; not reloaded by path)
 
 
-def _load_balance():
-    spec = importlib.util.spec_from_file_location("balance", os.path.join(HERE, "balance.py"))
+def _load(name, path):
+    spec = importlib.util.spec_from_file_location(name, path)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
+
+
+def start_dashboard(host, port):
+    """Run the Dash app in a daemon thread, in this process, so it shares the telemetry buffer."""
+    import app as dash_app  # sim/dashboard/app.py (imports telemetry from this process)
+
+    def serve():
+        dash_app.app.run(host=host, port=port, debug=False, use_reloader=False)
+
+    t = threading.Thread(target=serve, name="dashboard", daemon=True)
+    t.start()
+    print(f"dashboard: http://localhost:{port}  (open it in your browser)", flush=True)
+    return t
 
 
 def main():
@@ -35,10 +56,13 @@ def main():
     ap.add_argument("--push-y", type=float, default=0.0, help="pelvis force along y (N)")
     ap.add_argument("--push-t", type=float, default=5.0, help="push start time (s)")
     ap.add_argument("--push-dur", type=float, default=0.2, help="push duration (s)")
-    ap.add_argument("--headless", action="store_true", help="no window; print a status line every second")
+    ap.add_argument("--headless", action="store_true", help="no 3D window; print status every second")
+    ap.add_argument("--dashboard-host", default="0.0.0.0")
+    ap.add_argument("--dashboard-port", type=int, default=8050)
+    ap.add_argument("--no-dashboard", action="store_true")
     args = ap.parse_args()
 
-    B = _load_balance()
+    B = _load("balance", os.path.join(HERE, "balance.py"))
     import mujoco
 
     r = B.Robot()
@@ -46,53 +70,100 @@ def main():
     ctrl = B.BalanceController(r)
     body = mujoco.mj_name2id(r.m, mujoco.mjtObj.mjOBJ_BODY, "LINK_BASE")
     dt = r.m.opt.timestep
+    every = 5  # telemetry thinning (see telemetry.TELEMETRY_EVERY)
+
+    if not args.no_dashboard:
+        start_dashboard(args.dashboard_host, args.dashboard_port)
+        dash_started = True
+    else:
+        dash_started = False
+    TL.set_state("running", seed=0, pushes=[args.push_x, args.push_y, args.push_t, args.push_dur])
 
     def apply_push(t):
         r.d.xfrc_applied[body, :] = 0
-        if args.push_t <= t < args.push_t + args.push_dur:
+        active = args.push_t <= t < args.push_t + args.push_dur
+        if active:
             r.d.xfrc_applied[body, 0] = args.push_x
             r.d.xfrc_applied[body, 1] = args.push_y
+        return active
 
     def status(t):
+        c = B.foot_contacts(r)
         print(f"t={t:6.2f} s  pelvis z={r.d.qpos[2]:.3f} m  tilt={r.tilt_deg():5.1f} deg  "
-              f"feet contacts L/R={B.foot_contacts(r)['L']}/{B.foot_contacts(r)['R']}", flush=True)
+              f"feet contacts L/R={c['L']}/{c['R']}", flush=True)
 
+    def hold_dashboard():
+        """Keep the dashboard up after the run ends, so its final numbers stay visible until Ctrl+C."""
+        if dash_started:
+            print("run finished; dashboard still open (Ctrl+C to exit)", flush=True)
+            try:
+                while True:
+                    time.sleep(1.0)
+            except KeyboardInterrupt:
+                pass
+
+    fell_at = None
     t = 0.0
+    step_i = 0
+
+    def record(t, pushing):
+        nonlocal step_i
+        if step_i % every == 0:
+            c = B.foot_contacts(r)
+            cmd = getattr(ctrl, "last_cmd", {})
+            TL.push({"t": round(t, 3), "z": round(float(r.d.qpos[2]), 4), "tilt_deg": round(r.tilt_deg(), 3),
+                     "com_ex": round(cmd.get("com_err", (0, 0))[0], 4),
+                     "com_ey": round(cmd.get("com_err", (0, 0))[1], 4),
+                     "ankle_cmd": round(cmd.get("ankle", 0.0), 4), "hip_cmd": round(cmd.get("hip", 0.0), 4),
+                     "contacts_L": c["L"], "contacts_R": c["R"],
+                     "push_n": args.push_x if pushing else 0.0, "pushing": pushing})
+
+    def run_loop_step(t):
+        nonlocal fell_at, step_i
+        pushing = apply_push(t)
+        ctrl.step()
+        step_i += 1
+        record(t + dt, pushing)
+        if fell_at is None and (r.d.qpos[2] < 0.6 or r.tilt_deg() > 25.0):
+            fell_at = t + dt
+            TL.set_state("fell", fell_at=round(fell_at, 3))
+            print(f"FELL at t={fell_at:.2f} s (tilt {r.tilt_deg():.1f} deg)", flush=True)
+
     if args.headless:
         n = int(round((args.T or 10.0) / dt))
         for i in range(n):
             t = i * dt
-            apply_push(t)
-            ctrl.step()
+            run_loop_step(t)
             if i % int(round(1.0 / dt)) == 0:
                 status(t)
-            if r.d.qpos[2] < 0.6 or r.tilt_deg() > 25.0:
-                print(f"FELL at t={t:.2f} s (tilt {r.tilt_deg():.1f} deg)")
-                return
-        print(f"held to t={t + dt:.2f} s; final tilt {r.tilt_deg():.1f} deg")
+            if fell_at is not None:
+                break
+        if fell_at is None:
+            print(f"held to t={t + dt:.2f} s; final tilt {r.tilt_deg():.1f} deg", flush=True)
+            TL.set_state("done", final_tilt=round(r.tilt_deg(), 3))
+        hold_dashboard()
         return
 
-    import mujoco.viewer  # noqa: F401  (needed for launch_passive; needs a display)
+    import mujoco.viewer  # noqa: F401  (needs a display)
 
     with mujoco.viewer.launch_passive(r.m, r.d) as viewer:
         wall0 = time.perf_counter()
-        last_print = -1.0
+        last_print = -1
         while viewer.is_running():
             if args.T and t >= args.T:
                 break
-            apply_push(t)
-            ctrl.step()
+            run_loop_step(t)
             t += dt
             viewer.sync()
             if int(t) != last_print:
                 last_print = int(t)
                 status(t)
-            if r.d.qpos[2] < 0.6 or r.tilt_deg() > 25.0:
-                print(f"FELL at t={t:.2f} s (tilt {r.tilt_deg():.1f} deg). Close the window to exit.")
-            # real-time pacing
             ahead = t - (time.perf_counter() - wall0)
             if ahead > 0:
                 time.sleep(ahead)
+    if fell_at is None:
+        TL.set_state("done", final_tilt=round(r.tilt_deg(), 3))
+    hold_dashboard()
 
 
 if __name__ == "__main__":

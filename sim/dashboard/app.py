@@ -29,6 +29,7 @@ from dash import Dash, Input, Output, State, ctx, dcc, html, no_update  # noqa: 
 
 import planar_base  # noqa: E402
 from stage0.config import Stage0Config  # noqa: E402
+from telemetry import TELEMETRY  # noqa: E402  (balance run started by sim/t800/viewer.py)
 
 X0, X1, Y0, Y1 = -1.0, 9.0, -4.0, 4.0
 POLL_MS = 500
@@ -243,6 +244,14 @@ def build_app():
             dcc.Graph(id="c-speed", config={"displayModeBar": False}),
             dcc.Graph(id="c-accel", config={"displayModeBar": False}),
         ]),
+        html.H3("Balance run (free-standing T800, from the viewer)", style={"marginTop": "18px"}),
+        html.Div(id="b-state", style={"fontSize": "13px", "color": "#6b7585", "marginBottom": "6px"}),
+        html.Div(style={"display": "grid", "gridTemplateColumns": "repeat(auto-fit, minmax(420px, 1fr))",
+                        "gap": "10px"}, children=[
+            dcc.Graph(id="b-tilt", config={"displayModeBar": False}),
+            dcc.Graph(id="b-com", config={"displayModeBar": False}),
+            dcc.Graph(id="b-contacts", config={"displayModeBar": False}),
+        ]),
         dcc.Interval(id="tick", interval=POLL_MS, n_intervals=0),
         html.Div("Stage 0 scenario S2: persons do not react to the robot. Solve times are sandbox "
                  "measurements, not an NMPC rate.", style={"fontSize": "12px", "color": "#6b7585", "marginTop": "10px"}),
@@ -296,7 +305,83 @@ def build_app():
         ]
         return [scene_figure(events)] + charts + [k[i] for i in kpi_ids] + [k["state"]]
 
+    @app.callback([Output("b-state", "children"), Output("b-tilt", "figure"),
+                   Output("b-com", "figure"), Output("b-contacts", "figure")],
+                  Input("tick", "n_intervals"))
+    def refresh_balance(_):
+        return balance_panel()
+
     return app
+
+
+def balance_panel():
+    """Status line and the three balance figures, from the shared telemetry buffer."""
+    samples, state, meta, n = TELEMETRY.snapshot()
+    head = f"viewer state: {state} · samples: {n}"
+    if meta.get("final_tilt") is not None:
+        head += f" · final tilt {meta['final_tilt']:.1f}°"
+    if state == "not started":
+        head += " · start sim/t800/viewer.py to feed this panel"
+    return [head, balance_tilt_figure(samples), balance_com_figure(samples), balance_contacts_figure(samples)]
+
+
+def _shapes_for_pushes(samples, ymin, ymax):
+    shapes = []
+    for s_ in samples:
+        if s_.get("pushing"):
+            shapes.append(dict(type="rect", xref="x", yref="y", x0=s_["t"], x1=s_["t"] + 0.01,
+                               y0=ymin, y1=ymax, fillcolor="rgba(209,67,59,0.25)", line=dict(width=0)))
+    return shapes
+
+
+def balance_tilt_figure(samples):
+    fig = go.Figure()
+    if samples:
+        t = [s_["t"] for s_ in samples]
+        fig.add_trace(go.Scatter(x=t, y=[s_["tilt_deg"] for s_ in samples], name="tilt (deg)", mode="lines",
+                                 line=dict(color="#1f6feb")))
+        fig.add_trace(go.Scatter(x=t, y=[s_["z"] for s_ in samples], name="pelvis z (m)", mode="lines",
+                                 line=dict(color="#2e7d32"), yaxis="y2"))
+        fig.add_hline(y=20, line=dict(color="#c62828", dash="dash"), annotation_text="fall limit 20°")
+        fig.update_layout(shapes=_shapes_for_pushes(samples, 0, 25))
+    fig.update_layout(title=dict(text="Pelvis tilt and height (red bands = push)", x=0.01), height=260,
+                      margin=dict(l=50, r=50, t=40, b=40), xaxis_title="time (s)",
+                      yaxis=dict(title="tilt (deg)", range=[0, 25]),
+                      yaxis2=dict(title="z (m)", overlaying="y", side="right", range=[0.5, 1.2]),
+                      legend=dict(orientation="h", y=1.15), uirevision="b-tilt")
+    return fig
+
+
+def balance_com_figure(samples):
+    fig = go.Figure()
+    if samples:
+        t = [s_["t"] for s_ in samples]
+        fig.add_trace(go.Scatter(x=t, y=[s_["com_ex"] for s_ in samples], name="CoM error x (m)", mode="lines",
+                                 line=dict(color="#d1433b")))
+        fig.add_trace(go.Scatter(x=t, y=[s_["com_ey"] for s_ in samples], name="CoM error y (m)", mode="lines",
+                                 line=dict(color="#e0a100")))
+        fig.add_trace(go.Scatter(x=t, y=[s_["ankle_cmd"] for s_ in samples], name="ankle cmd (rad)", mode="lines",
+                                 line=dict(color="#6a4fb3"), yaxis="y2"))
+    fig.update_layout(title=dict(text="Centre-of-mass error and ankle command", x=0.01), height=260,
+                      margin=dict(l=50, r=50, t=40, b=40), xaxis_title="time (s)",
+                      yaxis=dict(title="m"), yaxis2=dict(title="rad", overlaying="y", side="right"),
+                      legend=dict(orientation="h", y=1.15), uirevision="b-com")
+    return fig
+
+
+def balance_contacts_figure(samples):
+    fig = go.Figure()
+    if samples:
+        t = [s_["t"] for s_ in samples]
+        fig.add_trace(go.Scatter(x=t, y=[s_["contacts_L"] for s_ in samples], name="left foot contacts",
+                                 mode="lines", line=dict(color="#1f6feb", shape="hv")))
+        fig.add_trace(go.Scatter(x=t, y=[s_["contacts_R"] for s_ in samples], name="right foot contacts",
+                                 mode="lines", line=dict(color="#2a9d8f", shape="hv")))
+    fig.update_layout(title=dict(text="Floor contacts per foot", x=0.01), height=260,
+                      margin=dict(l=50, r=20, t=40, b=40), xaxis_title="time (s)",
+                      yaxis=dict(title="contacts", rangemode="tozero"),
+                      legend=dict(orientation="h", y=1.15), uirevision="b-contacts")
+    return fig
 
 
 app = build_app()
