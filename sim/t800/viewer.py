@@ -72,11 +72,15 @@ def main():
     dt = r.m.opt.timestep
     every = 5  # telemetry thinning (see telemetry.TELEMETRY_EVERY)
 
-    if not args.no_dashboard:
-        start_dashboard(args.dashboard_host, args.dashboard_port)
-        dash_started = True
-    else:
-        dash_started = False
+    # The dashboard is started by ensure_dashboard(): at once in --headless mode, and otherwise
+    # only once the 3D window has opened (or failed, so the reason shows on the page).
+    dash_started = False
+
+    def ensure_dashboard():
+        nonlocal dash_started
+        if not dash_started and not args.no_dashboard:
+            start_dashboard(args.dashboard_host, args.dashboard_port)
+            dash_started = True
     TL.set_state("running", seed=0, pushes=[args.push_x, args.push_y, args.push_t, args.push_dur])
 
     def apply_push(t):
@@ -130,6 +134,7 @@ def main():
             print(f"FELL at t={fell_at:.2f} s (tilt {r.tilt_deg():.1f} deg)", flush=True)
 
     if args.headless:
+        ensure_dashboard()
         n = int(round((args.T or 10.0) / dt))
         for i in range(n):
             t = i * dt
@@ -150,6 +155,7 @@ def main():
         msg = "no DISPLAY: 3D window not opened (use scripts/run_viewer.sh, or --headless)"
         print(msg, flush=True)
         TL.set_state("error", message=msg)
+        ensure_dashboard()
         hold_dashboard()
         return
 
@@ -159,6 +165,7 @@ def main():
         print(f"3D window: opening on DISPLAY={os.environ.get('DISPLAY')}", flush=True)
         with mujoco.viewer.launch_passive(r.m, r.d) as viewer:
             print("3D window: open (closing it ends the run; the dashboard stays up)", flush=True)
+            ensure_dashboard()  # the dashboard opens with the 3D window
             wall0 = time.perf_counter()
             last_print = -1
             while viewer.is_running():
@@ -176,6 +183,7 @@ def main():
     except Exception as exc:  # keep the dashboard up so the error shows on the page
         print(f"3D window failed: {exc!r}. Dashboard stays up (Ctrl+C to exit).", flush=True)
         TL.set_state("error", message=repr(exc))
+        ensure_dashboard()
         hold_dashboard()
         return
     if fell_at is None:

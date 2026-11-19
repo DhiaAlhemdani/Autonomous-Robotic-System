@@ -107,7 +107,7 @@ Requires a Linux desktop session (X11, not Wayland-only) and Docker with the com
 scripts/run_viewer.sh
 ```
 
-The script allows local X connections (`xhost +local:`), starts the `viewer` service (MuJoCo 3D window on your display, plus the Dash dashboard on port 8050), and opens http://localhost:8050 in your browser. Stop with `docker compose --profile sim-only stop viewer`.
+The dashboard opens once the 3D window has opened (the viewer logs `3D window: open`). The script allows local X connections (`xhost +local:`), starts the `viewer` service (MuJoCo 3D window on your display, plus the Dash dashboard on port 8050), and opens http://localhost:8050 in your browser. Stop with `docker compose --profile sim-only stop viewer`.
 
 The dashboard's balance panel shows the live state written by the viewer: pelvis tilt and height, centre-of-mass error with the ankle command, and floor contacts per foot. Red bands mark the push. After the run ends, the dashboard stays up until you stop the container.
 
