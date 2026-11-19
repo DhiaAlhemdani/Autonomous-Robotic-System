@@ -52,6 +52,8 @@ python3 -m venv .venv                      # once; on Ubuntu/Debian: sudo apt in
 .venv/bin/python -m pip install mujoco==3.2.3 -r planning/humanoid_nmpc/requirements.txt
 ```
 
+If pip's downloads keep failing hash checks on your network, run `.venv/bin/python planning/humanoid_nmpc/fetch_verified.py` instead. It downloads each wheel, checks it against the PyPI sha256, retries bad copies, and installs only verified files.
+
 Run commands with `.venv/bin/python`, or activate with `. .venv/bin/activate`. Pins match CI (`.github/workflows/skeleton.yml`). Each package's README gives its run command.
 
 ## Design principles
