@@ -21,3 +21,6 @@ __pycache__/
 /build/
 /install/
 /log/
+
+# local Python environments (laptop and sandbox)
+.venv*/

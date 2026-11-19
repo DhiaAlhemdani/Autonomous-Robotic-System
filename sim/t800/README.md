@@ -85,8 +85,9 @@ Open questions and caveats:
 
 ```
 git submodule update --init --depth 1 third_party/T800-PROJECT
+# Ubuntu/Debian first, if venv is missing:  sudo apt install python3-venv python3-pip
 python3 -m venv .venv-viewer && . .venv-viewer/bin/activate
-pip install mujoco==3.2.3 numpy==1.26.4
+python -m pip install mujoco==3.2.3 numpy==1.26.4
 python sim/t800/viewer.py                            # stand; no push
 python sim/t800/viewer.py --push-x -150 --push-t 5    # 150 N backward push at 5 s
 ```
