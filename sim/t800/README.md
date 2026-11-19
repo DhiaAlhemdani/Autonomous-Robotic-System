@@ -85,18 +85,17 @@ Open questions and caveats:
 
 ```
 git submodule update --init --depth 1 third_party/T800-PROJECT
-# Ubuntu/Debian first, if venv is missing:  sudo apt install python3-venv python3-pip
-python3 -m venv .venv-viewer && . .venv-viewer/bin/activate
-python -m pip install mujoco==3.2.3 numpy==1.26.4
-python sim/t800/viewer.py                            # stand; no push
-python sim/t800/viewer.py --push-x -150 --push-t 5    # 150 N backward push at 5 s
+# One shared venv at the repo root; see the "Python environment" section of README.md
+.venv/bin/python -m pip install mujoco==3.2.3 numpy==1.26.4   # first time only
+.venv/bin/python sim/t800/viewer.py                          # stand; no push
+.venv/bin/python sim/t800/viewer.py --push-x -150 --push-t 5 # 150 N backward push at 5 s
 ```
 
 Options: `--push-x`, `--push-y` (N), `--push-t` (start, s), `--push-dur` (s, default 0.2), `--T` (stop after T s). Closing the window ends the run. Stop with Ctrl+C or `--T`.
 
 Expected behaviour, from the sandbox headless run: quiet standing holds with a final tilt of 3.4°. The 150 N backward push at 5 s makes the robot fall at about 6.6 s. The window is not checked in the sandbox (no display there), so please report anything that looks wrong in the window.
 
-Headless check (no window, runs anywhere): `python sim/t800/viewer.py --headless --T 10`.
+Headless check (no window, runs anywhere): `.venv/bin/python sim/t800/viewer.py --headless --T 10`.
 
 
 ## Linux laptop: viewer in a container (X11)

@@ -43,6 +43,17 @@ The EU Machinery Regulation (EU) 2023/1230 applies from **20 January 2027** and 
 | [`docs/06-reading-list.md`](docs/06-reading-list.md) | Books and papers mapped to each theory document |
 | [`docs/theory/`](docs/theory/) | Kinematics & dynamics · PMSM/FOC · estimation · NMPC · RL · RL+MPC safety integration · perception · safety & verification |
 
+## Python environment
+
+One shared virtual environment, `.venv`, at the repository root serves every Python check (the T800 viewer, the NMPC package, Stage 0 tests). It is gitignored by `.venv*/`.
+
+```
+python3 -m venv .venv                      # once; on Ubuntu/Debian: sudo apt install python3-venv
+.venv/bin/python -m pip install mujoco==3.2.3 -r planning/humanoid_nmpc/requirements.txt
+```
+
+Run commands with `.venv/bin/python`, or activate with `. .venv/bin/activate`. Pins match CI (`.github/workflows/skeleton.yml`). Each package's README gives its run command.
+
 ## Design principles
 
 1. **Theory before code.** Every controller is derived and its assumptions written down before it is implemented.
