@@ -66,8 +66,9 @@ The interface between them is a **bounded, versioned serial or CAN protocol**: f
 
 | Unit | Runs (humanoid) | Status |
 | --- | --- | --- |
-| Edge computer | L0 estimation, L1 locomotion (100 Hz), L2 supervisor, L3 NMPC, L4, L5, logging | Proposed. Rates from `docs/14` §2 and `docs/15` §6 |
-| Joint servo (L1 inner loop, ≥ 1 kHz target) | **MCU** | **Decided by the project owner.** Hard real-time control runs on the MCU |
+| Edge computer | L0 estimation, L2 supervisor, L3 NMPC, L4, L5, logging | Proposed. Rates from `docs/14` §2 and `docs/15` §6 |
+| L1 locomotion (outer loop, 100 Hz) | **MCU** | **Decided by the project owner.** Requires the walking policy to run on the MCU; not yet shown feasible (see §11.3) |
+| L1 joint servo (inner loop, ≥ 1 kHz target) | **MCU** | **Decided by the project owner.** Hard real-time control runs on the MCU |
 | Interface | Bounded, versioned protocol with CRC and heartbeat | Still required. The heartbeat behaviour is in §11.4, not the wheeled rule |
 
 The edge computer may fail at any time. Whether the robot survives that depends on the MCU-side rule in §11.4 and on the open decision in `docs/14` §4.7. The claim in §2 that the robot is safe without the high-level computer is **not** made for the humanoid until that decision is taken.
@@ -278,12 +279,12 @@ L4 (global planning) and L5 (mission policy) of §1 are kept unchanged. L0 perce
 1. **Numbering: resolved.** The humanoid now uses the §1 numbers for the same roles (L0, L1, L2, L3). Locomotion and the joint servo share L1 as two loops; the project owner accepted this sharing. `docs/14` uses the same numbers. §1 and §2 still need their text rewritten to match.
 2. **Heartbeat loss (§2).** The rule "loss of heartbeat ⇒ MCU ramps torque to zero" is unsafe for a humanoid. Ramping torque to zero makes an upright robot fall. Interim humanoid rule in §11.4; the decision is open.
 3. **Safe stop (§6).** "Torque removed, brakes engaged" does not apply. The humanoid ladder is in §6.1. Its safe stop is the state chosen in `docs/14` §4, which is awaiting the project owner's decision (O4).
-4. **Compute allocation (§2).** Resolved for the joint servo: it runs on the MCU, as decided by the project owner. The locomotion loop's placement is still open (§11.3).
+4. **Compute allocation (§2).** Resolved: L1 locomotion and the joint servo both run on the MCU, as decided by the project owner. The consequence for the MCU's compute is open (§11.3).
 
 ### 11.3 Not decided here
 
 - The humanoid NMPC design: proposed in `docs/15`, not frozen. Solver choice and timing budget are open until measured.
-- Where the 100 Hz locomotion loop runs: MCU or edge computer. Not yet decided.
+- **Feasibility of L1 locomotion on the MCU.** The owner decided the MCU runs it. The upstream walking policy is a 4.3 MB network run at 100 Hz (`docs/14` §2.2). Nothing in the repo shows the MCU can run it. The MCU's processor, memory and inference time must be measured before this decision is relied on.
 - The data and logging formats for the humanoid (§7 is superseded for the MCU frame format).
 - Whether the RL mission policy (L5 in §1) remains a learned layer above the navigation layer. This is a scope question, not an architecture change, and is left to `docs/00`.
 
@@ -293,7 +294,7 @@ The wheeled rule (`ramp torque to zero`, §2 and §6) is withdrawn for the human
 
 **Interim rule (ASSUMPTION for all timing values):**
 
-1. **Edge computer lost (no heartbeat for T_hb):** the MCU, which runs the joint servo, stops accepting new targets and holds the last joint targets with the hold-stance gains of `docs/14` §2.2 (`pd_stand`). It does not ramp torque to zero while the robot is upright. The MCU does not run the locomotion loop unless §11.3 decides it does, so the hold uses the last targets only.
+1. **Edge computer lost (no heartbeat for T_hb):** the MCU keeps running L1 locomotion and the joint servo. It stops accepting new velocity commands and holds stance (`pd_stand`, `docs/14` §2.2). It does not ramp torque to zero while the robot is upright. Holding stance depends on the feasibility item in §11.3.
 2. **Hold is not possible** (tilt above θ_hold, or a foot lost contact): the MCU has no fall posture, because the fall posture is planned above the MCU. The only MCU action left is S4, torque off. This is a fall, and the impact is the one `docs/14` §4.4 option 3 accepts. It is the reason for the decision below.
 3. **T_hb:** not set. It must be shorter than the time the hold stays stable in simulation (`docs/14` E7 and E8).
 
