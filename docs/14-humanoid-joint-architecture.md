@@ -78,11 +78,15 @@ Joint-level control is split into five layers. The rate rule of `docs/02` §1 ap
   - Report drift against the simulator base pose **only in evaluation**, not in the estimator.
 - **Upstream reference:** `motion_state_estimator/default.yaml` fuses joint velocity (weight 0.8) with IMU (weight 0.2) and uses per-joint velocity thresholds. Its joint labels do not match the model: the config numbers the twelve leg joints J01–J12, while the model numbers them J00–J11, and some names differ (for example `J03_HIP_PITCH_L` in the config, where the model has `J03_KNEE_PITCH_L`). This must be resolved before the config is used. Until then, the estimator is ours to design, and the upstream file is a reference only.
 
-### 2.4 L3 — Navigation and command shaping
+### 2.4 L3 — Navigation and command shaping (NMPC)
 
-- **Output:** `(vx, vy, ω)` at 10–20 Hz, bounded by the limits in §4.
-- **Input:** the path and goal from the navigation layer (`docs/02` L3–L4). That layer is not revised here.
+NMPC stays at L3, as decided by the project owner (`docs/02` §11). It is the local planner and tracker for the humanoid.
+
+- **Input:** the global path from L4 (`docs/02` §1); state from L0; the safety field from L2; command limits from §3.1.
+- **Output:** a body-frame reference `(vx, vy, ω)` at 10–20 Hz, sent to L1 locomotion. Limits are set in §3.1 and by the safety supervisor (§2.5).
+- **Limit of the interface:** the upstream walking policy takes only a velocity command. NMPC cannot send footstep or full-body trajectory targets through this interface.
 - **Shaping:** a limit on acceleration and on yaw rate, so the walking policy receives commands inside its training range. The range is not documented upstream and must be measured.
+- **Not specified:** the NMPC model, cost, horizon, and solve-time budget for the humanoid. This needs its own design, and the fallback chain of `docs/02` §6 applies to it.
 
 ### 2.5 L2 — Safety supervisor
 

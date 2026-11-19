@@ -228,7 +228,7 @@ The humanoid has no wheel drive, so some layer roles change. The humanoid stack 
 
 | Humanoid layer (`docs/14`) | Rate (draft) | Same role as §1 | Note |
 | --- | --- | --- | --- |
-| **L3 Navigation & command shaping** | 10–20 Hz | L3 local planning | Output is body-frame `(vx, vy, ω)`, not `(v, ω)` for a wheel base. Whether NMPC stays here is open |
+| **L3 Navigation & command shaping (NMPC)** | 10–20 Hz | L3 local planning (NMPC) | Output is body-frame `(vx, vy, ω)`, not `(v, ω)` for a wheel base. NMPC stays at L3 (owner decision). Its humanoid design is not yet specified |
 | **L1 Locomotion (outer loop)** | 100 Hz | none (new) | Gait and balance. Baseline is the upstream RL walking policy, not evaluated here |
 | **L1 Joint servo (inner loop)** | ≥ 1 kHz (target) | L1 drive | Joint PD and torque limits. Replaces the FOC cascade; the rate is a target, not verified |
 | **L0 State estimation** | 100–1000 Hz | L0 odometry | IMU, joint states and foot contact. Wheel odometry is removed |
@@ -245,7 +245,7 @@ L4 (global planning) and L5 (mission policy) of §1 are kept unchanged. L0 perce
 
 ### 11.3 Not decided here
 
-- Whether NMPC stays at L3 for the humanoid (open; the project owner has not answered).
+- The humanoid NMPC design (model, cost, horizon, solve-time budget). NMPC is at L3 by decision; its design is not started.
 - Whether the joint servo runs on the MCU or the edge computer.
 - The data and logging formats for the humanoid (§7 is superseded for the MCU frame format).
 - Whether the RL mission policy (L5 in §1) remains a learned layer above the navigation layer. This is a scope question, not an architecture change, and is left to `docs/00`.
