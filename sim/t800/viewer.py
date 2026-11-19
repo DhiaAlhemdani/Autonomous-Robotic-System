@@ -10,7 +10,7 @@ Run on a laptop with a display (native, or the Linux container with X11, see doc
 
 Pushes are horizontal forces on the pelvis, held for --push-dur seconds (default 0.2 s).
 The window runs at real time. That is the simulation rate, not a measurement of the controller.
-Closing the window does not stop the run: the window reopens after 2 s. Stop with Ctrl+C.
+Closing the window ends the run. Stop with Ctrl+C or --T.
 
 Simulation only. The controller is not a validated balance controller and does not handle
 pushes above about 150 N.
@@ -94,25 +94,16 @@ def main():
 
     import mujoco.viewer  # noqa: F401  (needs a display)
 
-    # The run lasts for the whole session. Closing the 3D window does not stop it: the window
-    # reopens after RETRY_S seconds, and the run continues with no window in the meantime.
-    RETRY_S = 2.0
-    cm = None          # open window's context manager
-    viewer = None      # open window, or None
-    window_ok = True   # False after a failure to open the window (stop retrying, keep the run going)
-    next_try = 0.0
+    # Closing the 3D window ends the run. The window is not reopened.
+    cm = None
+    viewer = None
 
     def open_window():
-        nonlocal cm, viewer, window_ok
-        try:
-            print(f"3D window: opening on DISPLAY={os.environ.get('DISPLAY')}", flush=True)
-            cm = mujoco.viewer.launch_passive(r.m, r.d)
-            viewer = cm.__enter__()
-            print("3D window: open (close it and it reopens in 2 s; the run keeps going)", flush=True)
-        except Exception as exc:
-            print(f"3D window failed: {exc!r}. The run continues without a window.", flush=True)
-            cm = viewer = None
-            window_ok = False
+        nonlocal cm, viewer
+        print(f"3D window: opening on DISPLAY={os.environ.get('DISPLAY')}", flush=True)
+        cm = mujoco.viewer.launch_passive(r.m, r.d)
+        viewer = cm.__enter__()
+        print("3D window: open (closing it ends the run)", flush=True)
 
     def close_window():
         nonlocal cm, viewer
@@ -130,17 +121,12 @@ def main():
         while True:
             if args.T and t >= args.T:
                 break
-            if viewer is None and window_ok and time.perf_counter() >= next_try:
-                open_window()
+            if not viewer.is_running():
+                print("3D window closed; run ended.", flush=True)
+                break
             run_loop_step(t)
+            viewer.sync()
             t += dt
-            if viewer is not None:
-                if viewer.is_running():
-                    viewer.sync()
-                else:
-                    print("3D window closed; the run continues and the window reopens shortly.", flush=True)
-                    close_window()
-                    next_try = time.perf_counter() + RETRY_S
             if int(t) != last_print:
                 last_print = int(t)
                 status(t)

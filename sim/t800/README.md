@@ -92,7 +92,7 @@ python sim/t800/viewer.py                            # stand; no push
 python sim/t800/viewer.py --push-x -150 --push-t 5    # 150 N backward push at 5 s
 ```
 
-Options: `--push-x`, `--push-y` (N), `--push-t` (start, s), `--push-dur` (s, default 0.2), `--T` (stop after T s). Closing the window does not exit: it reopens after 2 s. Stop with Ctrl+C.
+Options: `--push-x`, `--push-y` (N), `--push-t` (start, s), `--push-dur` (s, default 0.2), `--T` (stop after T s). Closing the window ends the run. Stop with Ctrl+C or `--T`.
 
 Expected behaviour, from the sandbox headless run: quiet standing holds with a final tilt of 3.4°. The 150 N backward push at 5 s makes the robot fall at about 6.6 s. The window is not checked in the sandbox (no display there), so please report anything that looks wrong in the window.
 
