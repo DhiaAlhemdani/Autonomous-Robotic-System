@@ -155,32 +155,70 @@ def main():
 
     import mujoco.viewer  # noqa: F401  (needs a display)
 
+    # The simulation runs for the whole session. Closing the 3D window does not stop it: the window
+    # reopens after RETRY_S seconds, and the run continues with no window in the meantime.
+    RETRY_S = 2.0
+    cm = None          # open window's context manager
+    viewer = None      # open window, or None
+    window_ok = True   # False after a failure to open the window (stop retrying, keep the sim running)
+    next_try = 0.0
+
+    def open_window():
+        nonlocal cm, viewer, window_ok
+        try:
+            print(f"3D window: opening on DISPLAY={os.environ.get('DISPLAY')}", flush=True)
+            cm = mujoco.viewer.launch_passive(r.m, r.d)
+            viewer = cm.__enter__()
+            print("3D window: open (close it and it reopens in 2 s; the run keeps going)", flush=True)
+        except Exception as exc:  # keep the dashboard up so the error shows on the page
+            print(f"3D window failed: {exc!r}. The run continues without a window.", flush=True)
+            TL.set_state("error", message=repr(exc))
+            cm = viewer = None
+            window_ok = False
+
+    def close_window():
+        nonlocal cm, viewer
+        if cm is not None:
+            try:
+                cm.__exit__(None, None, None)
+            except Exception:
+                pass
+        cm = viewer = None
+
+    wall0 = time.perf_counter()
+    last_print = -1
+    finished = False
     try:
-        print(f"3D window: opening on DISPLAY={os.environ.get('DISPLAY')}", flush=True)
-        with mujoco.viewer.launch_passive(r.m, r.d) as viewer:
-            print("3D window: open (closing it ends the run; the dashboard stays up)", flush=True)
-            wall0 = time.perf_counter()
-            last_print = -1
-            while viewer.is_running():
-                if args.T and t >= args.T:
-                    break
-                run_loop_step(t)
-                t += dt
-                viewer.sync()
-                if int(t) != last_print:
-                    last_print = int(t)
-                    status(t)
-                ahead = t - (time.perf_counter() - wall0)
-                if ahead > 0:
-                    time.sleep(ahead)
-    except Exception as exc:  # keep the dashboard up so the error shows on the page
-        print(f"3D window failed: {exc!r}. Dashboard stays up (Ctrl+C to exit).", flush=True)
-        TL.set_state("error", message=repr(exc))
+        open_window()
+        while True:
+            if args.T and t >= args.T:
+                finished = True
+                break
+            if viewer is None and window_ok and time.perf_counter() >= next_try:
+                open_window()
+            run_loop_step(t)
+            t += dt
+            if viewer is not None:
+                if viewer.is_running():
+                    viewer.sync()
+                else:
+                    print("3D window closed; the run continues and the window reopens shortly.", flush=True)
+                    close_window()
+                    next_try = time.perf_counter() + RETRY_S
+            if int(t) != last_print:
+                last_print = int(t)
+                status(t)
+            ahead = t - (time.perf_counter() - wall0)
+            if ahead > 0:
+                time.sleep(ahead)
+    except KeyboardInterrupt:
+        print("stopped (Ctrl+C)", flush=True)
+    finally:
+        close_window()
+    if finished:
+        if fell_at is None:
+            TL.set_state("done", final_tilt=round(r.tilt_deg(), 3))
         hold_dashboard()
-        return
-    if fell_at is None:
-        TL.set_state("done", final_tilt=round(r.tilt_deg(), 3))
-    hold_dashboard()
 
 
 if __name__ == "__main__":
