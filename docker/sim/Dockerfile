@@ -7,6 +7,7 @@ USER root
 RUN apt-get update \
  && apt-get install -y --no-install-recommends python3-venv libgl1 libegl1 \
     libx11-6 libxext6 libxrandr2 libxinerama1 libxcursor1 libxi6 libxrender1 \
+    libgl1-mesa-dri libglx-mesa0 libegl-mesa0 \
  && rm -rf /var/lib/apt/lists/*
 
 USER robot
