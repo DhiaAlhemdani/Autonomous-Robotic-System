@@ -90,6 +90,8 @@ def main():
     ap.add_argument("--settle", type=float, default=2.0, help="s of hold before the NMPC starts")
     ap.add_argument("--max-time", type=float, default=30.0)
     ap.add_argument("--out", default="")
+    ap.add_argument("--fd", action="store_true",
+                    help="finite-difference SLSQP gradients (baseline); default is analytic")
     args = ap.parse_args()
     res = run_episode(args)
     text = json.dumps(res, indent=2)
@@ -168,7 +170,7 @@ def run_episode(args, on_step=None, stop=None):
     w, x_, y_, z_ = d.qpos[3:7]
     pre["tilt_deg"] = float(np.degrees(2 * np.arccos(min(1.0, abs(w)))))
 
-    ctrl = Stage0NMPC(cfg)
+    ctrl = Stage0NMPC(cfg, analytic=not args.fd)
     res = {"seed": args.seed, "kp": args.kp, "kd": args.kd, "weld_solref": args.weld_solref,
            "settle": pre, "goal_reached": False, "steps": 0, "violation_steps": 0,
            "min_dist_person": float("inf"), "min_dist_object": float("inf"),
