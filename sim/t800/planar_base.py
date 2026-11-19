@@ -96,11 +96,18 @@ def main():
     res = run_episode(args)
     from dataclasses import asdict
     from runmeta.collect import collect_meta  # docs/02 §7: every result carries a run record
-    cfg_dict = asdict(Stage0Config())
-    cfg_dict.update({"sim": {"kp": args.kp, "kd": args.kd, "weld_solref": args.weld_solref,
-                              "settle_s": args.settle, "max_time_s": args.max_time,
-                              "solver": "slsqp", "analytic_gradients": not args.fd}})
+    from config_schema import SCHEMA_VERSION, validate as validate_config  # docs/02 §8
+    cfg_dict = {
+        "controller": asdict(Stage0Config()),
+        "sim": {"kp": args.kp, "kd": args.kd, "weld_solref": args.weld_solref,
+                "settle_s": args.settle, "max_time_s": args.max_time,
+                "solver": "slsqp", "analytic_gradients": not args.fd},
+    }
+    bad = validate_config(cfg_dict)
+    if bad:
+        raise SystemExit("config does not conform to schema v1: " + "; ".join(bad))
     res["meta"] = collect_meta("stage0_planar_scene", args.seed, cfg_dict)
+    res["meta"]["config_schema_version"] = SCHEMA_VERSION
     text = json.dumps(res, indent=2)
     print(text)
     if args.out:
