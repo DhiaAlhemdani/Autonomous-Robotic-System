@@ -1,6 +1,6 @@
 # 15 — Humanoid NMPC (Layer L3): Design Proposal
 
-**Status: design proposal, not frozen, not implemented.** Scope: the L3 navigation and command-shaping layer of the T800 humanoid, decided in `docs/02` §11 to be NMPC. Interfaces follow `docs/14` §2.4 and §3.1. Every number in this document is an **ASSUMPTION** until measured in simulation. No result in this document is a property of the physical robot.
+**Status: design proposal with a first implementation (`planning/humanoid_nmpc/`), not validated, not frozen.** See §10 for what was built, what changed from this text, and what it does not do. Scope: the L3 navigation and command-shaping layer of the T800 humanoid, decided in `docs/02` §11 to be NMPC. Interfaces follow `docs/14` §2.4 and §3.1. Every number in this document is an **ASSUMPTION** until measured in simulation. No result in this document is a property of the physical robot.
 
 Sources: `docs/13` (Stage 0 NMPC, planar double integrator), `docs/02` §6 (fallback chain), `docs/14` §§2–4 (locomotion interface, safety states), and the T800 submodule at `8bfd5b4`.
 
@@ -79,7 +79,7 @@ Stage-by-stage cost over horizon N:
 
 - **Target rate:** 10 Hz to start, within the 10–20 Hz band of `docs/14` §2.4.
 - **Budget (ASSUMPTION):** a solve must finish within half the period. At 10 Hz that is 50 ms on the target computer. The target computer is not chosen yet (`docs/02` §2), so this number is not a hardware measurement.
-- **Solver choice: not decided.** `docs/13` §9 found that SLSQP failed on all 489 infeasible steps, most with a line-search breakdown on non-convex circular constraints. **SLSQP is not a candidate for the humanoid NMPC.** A candidate is a QP-based real-time iteration with analytic gradients (`docs/13` §12 showed the gradient route is opt-in). The choice will be made by measurement in N4, not by assertion.
+- **Solver: chosen by measurement, partially (§10.3).** `docs/13` §9 found that SLSQP failed on all 489 infeasible steps, most with a line-search breakdown on non-convex circular constraints. **SLSQP is not a candidate.** The implementation uses a condensed QP solved by an active-set method (quadprog), with OSQP as the comparison. The default is quadprog.
 - **Warm start:** shifted previous solution, with the infeasible-step fraction reported next to timing (as in `docs/13`).
 - **Solve times** are reported as sandbox measurements. They are not target-hardware numbers.
 
@@ -125,3 +125,83 @@ Metrics come from ground truth in simulation only. The NMPC never receives the s
 | N-O6 | Whether the fallback stop in §7 is acceptable for the safe-state decision | `docs/14` §4.7 |
 
 **Non-claims.** This document does not claim that the NMPC tracks any path, avoids any person, or stops safely on the T800, in simulation or on hardware. It does not claim the solver meets any timing budget. The Stage 0 results (`docs/13`) are for a planar double integrator and do not transfer to this model.
+
+---
+
+## 10. Implementation status (added after the code)
+
+### 10.1 What exists
+
+| Part | File | Notes |
+| --- | --- | --- |
+| Config, all values ASSUMPTION | `planning/humanoid_nmpc/config.py` | Upstream scales used as limits (`docs/14` §2.2) |
+| Lag model, Jacobians, rollout | `planning/humanoid_nmpc/model.py` | Jacobians checked by finite differences in tests |
+| Controller and fallback chain | `planning/humanoid_nmpc/controller.py` | Condensed QP, SQP-RTI, verification, fallbacks |
+| Closed-loop harness | `planning/humanoid_nmpc/sim.py` | Plant = same model; ground-truth metrics |
+| Seeded sweep | `planning/humanoid_nmpc/run_demo.py` | Writes `runs/*.json` (gitignored) |
+| Tests (12) | `planning/tests/test_humanoid_nmpc.py` | Run from `planning/` |
+
+### 10.2 Amendments to this document
+
+1. **Condensed formulation.** Dynamics are eliminated: positions, velocities and heading are affine in the 3N commands. The first implementation kept the full state-and-input QP. OSQP did not converge reliably on it (median 512 iterations, some hit the cap; some results were inaccurate). The condensed QP is the one in use.
+2. **Heading cost added (§4).** Without it the robot drifted to about −0.3 rad in the first steps and the linearisation degraded. Weight `w_head` = 1.0 (ASSUMPTION).
+3. **Constraint back-off added (§5).** `margin_backoff` = 0.02 m is added to every separation margin in the QP. It is a tightening, not a relaxation. It absorbs solver residual.
+4. **Step 1 of §7 (slack re-solve) became a cold-start retry.** The formulation has no soft constraints: separation is hard, as §5 says. Relaxing separation to find a solution is not allowed.
+5. **An escape fallback was added before the stop.** The ramp-to-zero in §7 step 2 cannot leave a state where an agent is closing. The escape holds each candidate command within the rate limit over the horizon, under the constant-velocity prediction, and takes the one with the largest clearance. It is accepted only if that check keeps the margins. This is a sandbox-tested addition, not a reviewed one.
+6. **Output levels.** `nominal`, `retry`, `escape` (valid), `reactive_stop` (valid: ramp verified), `protective_stop` (valid=False; the ramp is not verified). A `protective_stop` is a request for L2, not a safe state.
+
+### 10.3 Solver comparison (N4, partial)
+
+Single crossing-person scenario, before the heading term and the escape were added. Same QP, two backends.
+
+| Backend | Steps (nominal / retry / other) | Margin violations in verification | Solve mean / p95 (sandbox) | Median iterations |
+| --- | --- | --- | --- | --- |
+| OSQP (ADMM) | 101 / 0 / 10 fallbacks | 10 | 21 ms / 49 ms | 1100 |
+| quadprog (active set) | 106 / 1 / 0 | 0 | 9.6 ms / 12.7 ms | 77 |
+
+Decision: quadprog is the default. This is one scenario, not a comparison across the sweep. The sweep numbers below use quadprog.
+
+### 10.4 Results (base model only, sandbox)
+
+Sweep on seeds 0–29 (the seeds used while tuning the heading weight, so not a held-out set):
+
+| Metric | Value |
+| --- | --- |
+| Steps | 3285 |
+| Levels | nominal 3282, retry 1, escape 2 |
+| Fallback fraction | 0.1% |
+| Goal reached | 28 of 30 seeds |
+| Min true margin to d_min | +0.204 m (never below d_min) |
+| Solve time (sandbox) | mean 16.9 ms, p95 23.0 ms, max 47.6 ms |
+
+Held-out sweep on seeds 30–59, run once after the changes above:
+
+| Metric | Value |
+| --- | --- |
+| Steps | 3117 |
+| Levels | nominal 3057, protective_stop 36, escape 22, retry 2 |
+| Fallback fraction | 1.9% |
+| Goal reached | 29 of 30 seeds |
+| Min true margin to d_min | −0.016 m, in 6 steps of seed 32, all `protective_stop` |
+| Solve time (sandbox) | mean 15.5 ms, p95 20.1 ms, max 34.8 ms |
+
+The sandbox solve times are CPU times on the development machine. They are not target-hardware numbers and do not decide the rate.
+
+### 10.5 Known limitations (not fixed)
+
+- **No recursive feasibility guarantee.** In seed 32 the planner reached a state where no candidate command kept the margins. The robot then entered the margin (six steps, −0.016 m at worst) during `protective_stop`. Nominal steps never violated the margin in any run. The fix (terminal set, longer horizon, or a stored safe trajectory) is not in this implementation.
+- **Local minima.** In some seeds the robot shadows agents or stops progressing. Goal not reached within 200 steps: seeds 0 and 22 of the training sweep, and seed 32 of the held-out sweep. Seed 0 ends 9.7 m from the goal, moving away from it with the heading held near 1.2 rad, so this is not a near miss. The cause is not diagnosed.
+- **Prediction is exact in these runs.** Agents move at constant velocity, which is also the prediction. These results say nothing about prediction error with people.
+- **Base model only.** The plant is the same lag model. No walking policy, no MuJoCo. The lag parameters are unidentified (N1).
+- **Escape is a one-shot check** over the horizon, under constant-velocity prediction. It is not a stopping envelope in the sense of `docs/02` §6.
+
+### 10.6 How to reproduce
+
+```
+cd planning
+../.venv-nmpc/bin/python -m pytest tests -q                     # 22 tests (12 humanoid, 10 Stage 0)
+../.venv-nmpc/bin/python -m humanoid_nmpc.run_demo --seeds 30   # seeds 0-29, writes runs/humanoid_nmpc_demo.json
+../.venv-nmpc/bin/python -m humanoid_nmpc.run_demo --start 30 --seeds 30 --out runs/humanoid_nmpc_demo_heldout.json
+```
+
+Dependencies are pinned in `planning/humanoid_nmpc/requirements.txt`. The venv was created in the repository root as `.venv-nmpc` (gitignored by `.venv*/`).
