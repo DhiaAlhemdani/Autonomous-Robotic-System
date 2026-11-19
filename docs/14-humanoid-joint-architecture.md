@@ -35,40 +35,40 @@ Sources are paths inside the submodule. Values were read from the files; none wa
 Joint-level control is split into five layers. The rate rule of `docs/02` §1 applies: each layer is at least 5–10× slower than the one below it.
 
 ```
-  L5  Navigation & command shaping      ~10–20 Hz   path → (vx, vy, ω) command   [docs/02 L3–L4, revised later]
+  L3  Navigation & command shaping      ~10–20 Hz   path → (vx, vy, ω) command   [docs/02 L3–L4, revised later]
   ───────────────────────────────────────────────────────────────────────────────
-  L4  Locomotion (balance & gait)        100 Hz      RL walking policy (baseline)
+  L1  Locomotion (outer loop, balance & gait) 100 Hz  RL walking policy (baseline)
                                                      or pd_stand; joint targets
   ───────────────────────────────────────────────────────────────────────────────
-  L3  Joint servo / actuation            ≥ 1 kHz*    PD on each joint; torque limits;
+  L1  Joint servo (inner loop, actuation)    ≥ 1 kHz* PD on each joint; torque limits;
                                                      parallel-ankle transform
   ───────────────────────────────────────────────────────────────────────────────
-  L2  State estimation                   100–1000 Hz IMU + joint states + foot contact
+  L0  State estimation                   100–1000 Hz IMU + joint states + foot contact
                                                      → base state with covariance
   ───────────────────────────────────────────────────────────────────────────────
-  L1  Safety supervisor (independent)    50–200 Hz   fall detection, degradation ladder,
-                                                     stop path; veto over L4–L5
+  L2  Safety supervisor (independent)    50–200 Hz   fall detection, degradation ladder,
+                                                     stop path; veto over L1 and L3
 ```
 
 \* The servo rate is not given upstream. The rate shown is the target for a real joint loop and is **not yet verified**. In simulation the physics step is 0.002 s (`balance.py`, our Stage A setup); the upstream policy steps at 0.01 s.
 
-### 2.1 L3 — Joint servo and actuation
+### 2.1 L1 (inner loop) — Joint servo and actuation
 
-- **Input:** joint position targets from L4 (22 controlled joints for the walking policy; see §3.2).
+- **Input:** joint position targets from L1 locomotion (22 controlled joints for the walking policy; see §3.2).
 - **Output:** joint torques, bounded by the `ctrlrange` limits in §1.
 - **Gains:** the upstream walking policy sets PD gains per joint (`joint_kp`, `joint_kd` in its default config). Those values are the baseline. They are not tuned for our simulation or for hardware.
 - **Parallel ankle:** the transform in `parallel_ankle/default.yaml` maps between motor and joint space. Its validity range is not stated in the upstream file. The design requires a test of the transform's round trip and of its range before the ankle is commanded.
 
-### 2.2 L4 — Locomotion (balance and gait)
+### 2.2 L1 (outer loop) — Locomotion (balance and gait)
 
 - **Baseline:** the upstream RL walking policy, adopted as a baseline per `docs/11` §7. It is **not evaluated** by this project.
 - **Other modes:** `pd_stand` (hold a standing pose) and `passive` (no torque). `passive` is a safe-state candidate only after §4 has decided what a fall does.
-- **Input:** a velocity command `(vx, vy, ω)` in the body frame, from L5. The upstream command comes from a gamepad, with per-axis scaling (`command_scale_pos`, `command_scale_neg`) and a low-pass filter (`remote_command_cut_off_frequency` 0.1 Hz at 40 Hz sampling).
+- **Input:** a velocity command `(vx, vy, ω)` in the body frame, from L3. The upstream command comes from a gamepad, with per-axis scaling (`command_scale_pos`, `command_scale_neg`) and a low-pass filter (`remote_command_cut_off_frequency` 0.1 Hz at 40 Hz sampling).
 - **Output:** joint position targets for the 22 controlled joints.
 - **Observation** (per step, 72 values, 15 history steps, plus the 3-value command): joint offset from default (22), joint velocity (22), previous action (22), body-frame angular velocity (3), projected gravity (3). The composition is in `rl_walking_example_runner.cc`.
 - **Limitation for our use:** the policy has no base velocity or position observation. Its velocity tracking is not measured by this project.
 
-### 2.3 L2 — State estimation
+### 2.3 L0 — State estimation
 
 - **Inputs:** IMU, joint positions and velocities, foot force/torque.
 - **Outputs:** base orientation, base velocity, and contact state for each foot. Each output carries a covariance.
@@ -78,15 +78,15 @@ Joint-level control is split into five layers. The rate rule of `docs/02` §1 ap
   - Report drift against the simulator base pose **only in evaluation**, not in the estimator.
 - **Upstream reference:** `motion_state_estimator/default.yaml` fuses joint velocity (weight 0.8) with IMU (weight 0.2) and uses per-joint velocity thresholds. Its joint labels do not match the model: the config numbers the twelve leg joints J01–J12, while the model numbers them J00–J11, and some names differ (for example `J03_HIP_PITCH_L` in the config, where the model has `J03_KNEE_PITCH_L`). This must be resolved before the config is used. Until then, the estimator is ours to design, and the upstream file is a reference only.
 
-### 2.4 L5 — Navigation and command shaping
+### 2.4 L3 — Navigation and command shaping
 
 - **Output:** `(vx, vy, ω)` at 10–20 Hz, bounded by the limits in §4.
 - **Input:** the path and goal from the navigation layer (`docs/02` L3–L4). That layer is not revised here.
 - **Shaping:** a limit on acceleration and on yaw rate, so the walking policy receives commands inside its training range. The range is not documented upstream and must be measured.
 
-### 2.5 L1 — Safety supervisor
+### 2.5 L2 — Safety supervisor
 
-Independent of L2–L5 in logic and in its stop path (`docs/01` SF-01). The design is under the rules of `docs/02` §6, but a humanoid changes the stop behaviour: removing torque makes the robot fall. Section 4 covers this.
+Independent of L0, L1 and L3 in logic and in its stop path (`docs/01` SF-01). The design is under the rules of `docs/02` §6, but a humanoid changes the stop behaviour: removing torque makes the robot fall. Section 4 covers this.
 
 ---
 
@@ -94,7 +94,7 @@ Independent of L2–L5 in logic and in its stop path (`docs/01` SF-01). The desi
 
 Names and units are proposed. Ranges marked **TBD** must be measured in simulation before they are frozen.
 
-### 3.1 Velocity command (L5 → L4)
+### 3.1 Velocity command (L3 → L1)
 
 | Field | Unit | Range | Source of range |
 | --- | --- | --- | --- |
@@ -102,14 +102,14 @@ Names and units are proposed. Ranges marked **TBD** must be measured in simulati
 | `vy` | m/s | TBD | upstream scale only: lateral ×0.4 both ways |
 | `yaw_rate` | rad/s | TBD | upstream scale only: ×1.0 both ways |
 | `stamp` | s | — | sensor-independent monotonic clock |
-| `valid` | bool | — | false → L4 holds the last safe pose |
+| `valid` | bool | — | false → L1 holds the last safe pose |
 
-### 3.2 Joint command (L4 → L3)
+### 3.2 Joint command (L1 locomotion → L1 servo)
 
 - 22 joint position targets (the walking policy's controlled set), in the order of `active_joint_names`.
 - Torso yaw and head joints (J12, J23, J24) are **not** in the walking policy's controlled set. The policy config does not say how they behave in walking mode. The design assumes they hold their default pose, and this must be confirmed by test.
 
-### 3.3 Base state (L2 → L4, L5, L1)
+### 3.3 Base state (L0 → L1, L3, L2)
 
 | Field | Unit | Notes |
 | --- | --- | --- |
@@ -119,7 +119,7 @@ Names and units are proposed. Ranges marked **TBD** must be measured in simulati
 | `contact[2]` | bool + confidence | per foot |
 | `valid` | bool | false if any input is stale |
 
-### 3.4 Safety state (L1 → all)
+### 3.4 Safety state (L2 → all)
 
 - `level`: `nominal`, `degraded`, `protective_stop`, `safe_stop`, `recovery` (`docs/02` §6).
 - `reason`: the trigger, logged as an event.
@@ -138,8 +138,8 @@ Doc 02 §6 defines a safe stop as torque removed and brakes engaged. A humanoid 
 
 | State | What the joints do | Allowed when | Exit |
 | --- | --- | --- | --- |
-| **S0 Nominal** | L4 locomotion follows L5 commands | All triggers in §4.3 clear | Trigger → S1 or S2 |
-| **S1 Degraded** | L5 commands limited to zero; L4 stops the gait and returns to `pd_stand` | Single soft trigger (e.g. command timeout, estimator warning) | Clears for T_hold → S0 (only with operator reset); escalates → S2 |
+| **S0 Nominal** | L1 locomotion follows L3 commands | All triggers in §4.3 clear | Trigger → S1 or S2 |
+| **S1 Degraded** | L3 commands limited to zero; L1 stops the gait and returns to `pd_stand` | Single soft trigger (e.g. command timeout, estimator warning) | Clears for T_hold → S0 (only with operator reset); escalates → S2 |
 | **S2 Hold stance** | `pd_stand` at reduced gains; no stepping | Robot upright and both feet in contact; tilt under θ_hold | Tilt over θ_hold or loss of contact → S3 |
 | **S3 Fall mitigation** | Fall posture (arms forward, knees bent, torso flexed) commanded for the predicted fall direction | Fall predicted (§4.3) and S2 cannot recover it | Impact detected → S4; or posture reached and stable → S4 |
 | **S4 Torque off (limp)** | Joint torques set to zero | Only after impact (contact on a non-foot body, or joint load spike), or when S3 has not reached its posture within T_posture | Stays until operator reset and a stand-up procedure (not in scope here) |
@@ -147,7 +147,7 @@ Doc 02 §6 defines a safe stop as torque removed and brakes engaged. A humanoid 
 Key constraints:
 
 - **Torque removal is never the first response to a robot that is upright.** Torque is removed only in S4, and only after S3 has run or an impact has already happened.
-- **S2 is not a stop from walking.** A walk is stopped by ramping the command to zero (L5) and letting L4 settle into `pd_stand`. A stop that cuts the gait abruptly is treated as a trigger for S3.
+- **S2 is not a stop from walking.** A walk is stopped by ramping the command to zero (L3) and letting L1 settle into `pd_stand`. A stop that cuts the gait abruptly is treated as a trigger for S3.
 - **S3 must know its fall direction.** Direction comes from the estimator's tilt and angular velocity. If the estimator is invalid, the robot goes straight to S4 under this rule, and this is a known weak case (see §4.6).
 
 ### 4.3 Triggers and thresholds
@@ -159,7 +159,7 @@ Each trigger is a sensor-derived signal. None uses the simulator base pose.
 | Tilt | Projected gravity, body frame | θ_warn = 10°, θ_hold = 20°, θ_fall = 35° | S1 → S2 → S3 |
 | Tilt rate | Body angular velocity | ω_fall = 2.0 rad/s, sustained for 0.1 s | Predicts a fall to S3 |
 | Loss of contact | Both foot force below F_min | F_min = 20 N, for 0.1 s | S2 → S3 |
-| Command timeout | L5 `valid` false, or no command for T_cmd | T_cmd = 0.3 s | S0 → S1 |
+| Command timeout | L3 `valid` false, or no command for T_cmd | T_cmd = 0.3 s | S0 → S1 |
 | Estimator invalid | Stale or non-finite base state | any, for 0.05 s | S0 → S1; S3 uses last valid direction |
 | Joint saturation | Joint torque at `ctrlrange` for a sustained period | T_sat = 0.2 s | S2 → S3 |
 | Impact | Non-foot contact or joint torque spike | spike > 2× the nominal peak (to be measured) | S3 → S4 |
