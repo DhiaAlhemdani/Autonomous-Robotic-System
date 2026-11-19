@@ -1,7 +1,7 @@
 """Seeded sweep of the humanoid NMPC on the base model (docs/15 §8).
 
 Usage (from planning/):
-    ../.venv-nmpc/bin/python -m humanoid_nmpc.run_demo --seeds 50 --T 200
+    ../.venv/bin/python -m humanoid_nmpc.run_demo --seeds 50 --T 200
 
 Each seed fixes: start offset, goal, and the number, start and velocity of people
 crossing the path, plus one static object near the path. Agents move at constant

@@ -199,9 +199,9 @@ The sandbox solve times are CPU times on the development machine. They are not t
 
 ```
 cd planning
-../.venv-nmpc/bin/python -m pytest tests -q                     # 22 tests (12 humanoid, 10 Stage 0)
-../.venv-nmpc/bin/python -m humanoid_nmpc.run_demo --seeds 30   # seeds 0-29, writes runs/humanoid_nmpc_demo.json
-../.venv-nmpc/bin/python -m humanoid_nmpc.run_demo --start 30 --seeds 30 --out runs/humanoid_nmpc_demo_heldout.json
+../.venv/bin/python -m pytest tests -q                     # 22 tests (12 humanoid, 10 Stage 0); pins numpy 1.26.4, scipy 1.13.1
+../.venv/bin/python -m humanoid_nmpc.run_demo --seeds 30   # seeds 0-29, writes runs/humanoid_nmpc_demo.json
+../.venv/bin/python -m humanoid_nmpc.run_demo --start 30 --seeds 30 --out runs/humanoid_nmpc_demo_heldout.json
 ```
 
-Dependencies are pinned in `planning/humanoid_nmpc/requirements.txt`. The venv was created in the repository root as `.venv-nmpc` (gitignored by `.venv*/`).
+Dependencies are pinned in `planning/humanoid_nmpc/requirements.txt`. Use the shared repository-root venv `.venv` (gitignored by `.venv*/`), created with `python3 -m venv .venv && .venv/bin/python -m pip install -r planning/humanoid_nmpc/requirements.txt`. The same pins are used by CI and the T800 viewer.
