@@ -2,6 +2,12 @@
 
 All notable changes to this design record. Format inspired by Keep a Changelog; the project is pre-implementation, so entries are design records rather than releases.
 
+## [Unreleased] — Platform revision (docs 00–02, T800)
+
+**Changed:** `docs/00` §4 and §5, `docs/01` (platform-dependent requirements marked **Re-derive**, change record §8), and `docs/02` (wheel-specific sections marked superseded, change record §10). Basis: `docs/11` §2 and §7. The mission and scenarios are unchanged. Legged locomotion is removed from the out-of-scope list. No humanoid values are set; the affected numbers are awaiting re-derivation.
+
+**Not done:** the joint-level architecture for the humanoid and its locomotion layer. The sim skeleton and interface freeze are not started.
+
 ## [Unreleased] — Dashboard removed
 
 **Removed (undoes the dashboard work in [0.11.0] and the T800 dashboard commits after [0.13.0]):**

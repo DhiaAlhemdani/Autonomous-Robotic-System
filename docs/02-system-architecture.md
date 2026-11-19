@@ -1,5 +1,7 @@
 # 02 — System Architecture
 
+> **Platform revision (`docs/11` §2.1 and §2.2).** The platform is now the T800 humanoid. The wheeled-robot parts of this document are **superseded**, and they are left in place so the change stays visible. Superseded items: the wheel-based `(v, ω)` and wheel-torque references (L3 output, §1 and §5), the wheel-drive FOC cascade (L1), wheel odometry and encoders (L0, §3), the wheel bridge (`bridge_mcu`, `wheel_cmd`), and the MCU joint-sensing assumptions (§2). A joint-level architecture for the humanoid, with the locomotion layer, is **not yet specified**. Until it is, read this document for its sensing, planning, safety and logging structure only.
+
 ## 1. Layer model and rate bands
 
 The system is organised as five layers spanning four orders of magnitude in bandwidth. The rate separation is not cosmetic: each layer must be at least 5–10× slower than the layer below it, so that the inner loop is transparent to the outer one (a standard cascade-control requirement).
@@ -37,6 +39,8 @@ The system is organised as five layers spanning four orders of magnitude in band
 
 **Key architectural rule:** L5 (learned) and L4 cannot command actuators directly. All commands pass through L2, which is not learning-enabled and holds veto power. This is what makes a neural policy admissible on physical hardware.
 
+> *Superseded for the humanoid (`docs/11` §2.1): wheel drive and encoder assumptions in this table.*
+
 ## 2. Compute allocation
 
 | Unit | Runs | Rationale |
@@ -45,6 +49,8 @@ The system is organised as five layers spanning four orders of magnitude in band
 | **Edge GPU computer** (Jetson-class) | L0 perception/estimation, L3 NMPC, L4 planning, L5 policy, logging | Floating-point and neural inference; soft real-time with measured jitter |
 
 The interface between them is a **bounded, versioned serial or CAN protocol**: fixed-length frames, sequence numbers, CRC, explicit limits, and a heartbeat. Loss of heartbeat ⇒ MCU ramps torque to zero. The high-level computer may fail at any moment without endangering the robot — this is a hard architectural requirement (SF-01, SF-02).
+
+> *Superseded for the humanoid (`docs/11` §2.1, §2.2): `wheel_odom`, `bridge_mcu` (`wheel_cmd`), and the `(v, ω)` path in `nmpc_controller` and `safety_filter`. The rest of this graph is kept as the sensing and planning structure, to be re-checked for the humanoid.*
 
 ## 3. ROS 2 node graph
 
@@ -79,6 +85,8 @@ The interface between them is a **bounded, versioned serial or CAN protocol**: f
 | Latency budget | Sensor acquisition → perception → costmap → NMPC → safety filter → serial → PWM, measured end-to-end and reported as p50/p99/max (PR-06) |
 | Jitter | Control-path period jitter measured and reported; a controller whose timing is unmeasured is not considered validated |
 | Bagging | MCAP with per-topic recording and an event log (state transitions, safety interventions) |
+
+> *Superseded for the humanoid (`docs/11` §2.2): the L3 output `u_mpc = (v, ω)` and the L1 wheel drive in the diagram below. The locomotion layer that the humanoid needs is not in this diagram.*
 
 ## 5. Control architecture: RL + NMPC + safety
 
@@ -140,6 +148,8 @@ The system never fails silently. Each level is a state published on `safety_stat
 
 **Rule:** a result is only reportable if the run directory contains a complete metadata record. Tooling rejects runs without it.
 
+> *Superseded for the humanoid (`docs/11` §2.1): the MCU frame format and the wheel-drive fields. No interface is frozen for the humanoid yet.*
+
 ## 8. Interface freeze
 
 Before implementation begins, these interfaces are written down and frozen: the MCU serial/CAN frame format (fields, units, scaling, CRC, limits, heartbeat), all ROS 2 message types and topic names with QoS, the configuration file schema (for controller, policy, perception and scenario parameters), the run-metadata schema, and the container entrypoints. Interfaces change only through an explicit change record appended to this document — never silently during development.
@@ -199,3 +209,10 @@ All candidates are compared on identical runs of scenarios S1–S5 (`docs/00` §
 - Decide whether §9.2 is needed in the first milestone or deferred.
 - Specify the behaviour set for §9.4.
 - Run the §9.6 comparison before any NMPC tuning begins.
+
+## 10. Change record: platform revision
+
+- **Basis:** `docs/11` §2 (consequences of the platform change), §7 (T800 platform decision). `docs/11` §2.1 and §2.2 name the superseded items marked above.
+- **Superseded:** the wheel-based control references, the wheel-drive FOC cascade, wheel odometry and encoders, the wheel bridge, the MCU joint-sensing assumptions, and the wheeled interface frame. Each is marked in place.
+- **Not yet specified:** the joint-level architecture for the humanoid, including the locomotion layer. This is a separate design task. Until it exists, no interface is frozen for the humanoid, and the interface freeze in §8 does not apply to the superseded items.
+- **Unchanged:** the layer model as a structure, the degradation ladder (§6), the logging architecture (§7), the timing rules (§4), and the perception and planning contract in §9, which remains a proposal under review.

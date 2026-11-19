@@ -2,6 +2,8 @@
 
 Numbered requirements with verification methods. Format: `ID · Requirement · Verification · Status`. Verification methods: **T** = test, **A** = analysis/derivation, **D** = demonstration, **I** = inspection of design record. This document is the contract; the architecture in doc 02 must satisfy it, and the roadmap in doc 04 must deliver it.
 
+> **Platform revision (`docs/11` §2.3).** The platform is now the T800 humanoid. Items marked **Re-derive** were written for the wheeled robot and are not valid for the humanoid until re-derived. Their numbers stay in place as the superseded values. Unmarked requirements are platform-independent and unchanged.
+
 ## 1. Platform and mission requirements
 
 | ID | Requirement | Verification | Status |
@@ -21,7 +23,7 @@ Numbered requirements with verification methods. Format: `ID · Requirement · V
 
 | ID | Requirement | Target | Verification |
 | --- | --- | --- | --- |
-| PR-01 | Maximum ground speed | 1.0 m/s (autonomous), 1.5 m/s (bench test) | T |
+| PR-01 | Maximum ground speed *(Re-derive: wheeled; humanoid speed to be set)* | 1.0 m/s (autonomous), 1.5 m/s (bench test) | T |
 | PR-02 | Trajectory tracking error on a reference path at 0.5 m/s | **RMSE ≤ 0.05 m** cross-track, ≤ 5° heading | T |
 | PR-03 | Localisation accuracy in a mapped space | **≤ 0.10 m** position, ≤ 3° heading (1σ) | T |
 | PR-04 | Map coverage of a reachable unknown space in a 10-minute mission | ≥ 90% | T |
@@ -30,9 +32,9 @@ Numbered requirements with verification methods. Format: `ID · Requirement · V
 | PR-07 | Mission success rate in nominal scenario suite | ≥ 90% over ≥ 30 runs | T |
 | PR-08 | Collision rate in nominal + dynamic scenario suite | **0 collisions** in ≥ 50 runs | T |
 | PR-09 | Minimum distance to a human during S2 | ≥ 0.35 m, never < 0.20 m | T |
-| PR-10 | Runtime on battery | ≥ 90 minutes continuous autonomy | T |
-| PR-11 | Drive current-loop control rate | ≥ 10 kHz | T |
-| PR-12 | Speed regulation bandwidth (wheel) | ≥ 100 Hz, measured by step response | T |
+| PR-10 | Runtime on battery *(Re-derive: platform-specific)* | ≥ 90 minutes continuous autonomy | T |
+| PR-11 | Drive current-loop control rate *(Re-derive: wheeled drive; humanoid joint drive to be specified)* | ≥ 10 kHz | T |
+| PR-12 | Speed regulation bandwidth (wheel) *(Re-derive: wheel-specific; not applicable as written)* | ≥ 100 Hz, measured by step response | T |
 | PR-13 | Regulatory/safety stop reaction time | Measured; target ≤ 100 ms from trigger to torque removal | T (instrumented) |
 
 ## 3. Software and reproducibility requirements
@@ -66,13 +68,13 @@ Numbered requirements with verification methods. Format: `ID · Requirement · V
 
 | ID | Constraint | Value / statement |
 | --- | --- | --- |
-| BC-01 | Mass | ≤ 25 kg complete |
-| BC-02 | Footprint | ≤ 0.60 × 0.50 m |
+| BC-01 | Mass *(Re-derive: humanoid mass to be specified)* | ≤ 25 kg complete |
+| BC-02 | Footprint *(Re-derive: humanoid footprint to be specified)* | ≤ 0.60 × 0.50 m |
 | BC-03 | Operating environment | Indoor, dry, 5–40 °C, non-condensing |
-| BC-04 | Floor | Smooth concrete / vinyl / tile; thresholds ≤ 15 mm; ramps ≤ 5° |
+| BC-04 | Floor *(Re-derive: floor and ramp limits were set for wheels)* | Smooth concrete / vinyl / tile; thresholds ≤ 15 mm; ramps ≤ 5° |
 | BC-05 | Onboard compute | One edge GPU module (Jetson-class, ≥ 8 GB) + one MCU (STM32-class, FPU, ≥ 100 MHz) |
-| BC-06 | Power | 24 V nominal battery, ≥ 300 Wh |
-| BC-07 | Cost ceiling | Tiered — see doc 04. Core tier target ≤ $1,500; advanced tier ≤ $3,000 |
+| BC-06 | Power *(Re-derive: humanoid power to be specified)* | 24 V nominal battery, ≥ 300 Wh |
+| BC-07 | Cost ceiling *(Re-derive: tiers built around the wheeled robot)* | Tiered — see doc 04. Core tier target ≤ $1,500; advanced tier ≤ $3,000 |
 | BC-08 | Development constraint | This phase is documentation-only; implementation begins when the development laptop is available |
 
 ## 6. Assumption register (violations invalidate requirements)
@@ -100,3 +102,10 @@ Every requirement must appear in at least one scenario, test or analysis. The in
 | SF-01 … SF-06 | `safety/test_stop_timing.py`, hazard analysis record | Bench |
 
 **Change control:** any change to a requirement requires a note in the repository's change record stating what invalidated the previous version. Requirements are versioned; this document is not edited silently.
+
+## 8. Change record: platform revision
+
+- **Basis:** `docs/11` §2.3 (requirements to be re-derived for the humanoid) and §7 (T800 platform decision). This record does not set new values for the humanoid.
+- **Invalidated, re-derivation pending:** PR-01, PR-10, PR-11, PR-12, BC-01, BC-02, BC-04, BC-06, BC-07. Their original numbers are kept in the tables for traceability.
+- **Unchanged in intent:** functional requirements FR-01 … FR-10, software and reproducibility requirements SR-01 … SR-09, and safety requirements SF-01 … SF-08. Verification methods are unchanged.
+- **Assumption register:** AS-01 (level, non-slip floor) and AS-02 (LiDAR-friendly geometry) need review for a legged platform. AS-05 (no public roads) is unchanged.
