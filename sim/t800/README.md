@@ -51,3 +51,31 @@ Results (sandbox, seeds 0–9, all 10 episodes run to completion):
 - Infeasible steps occur (5%). Each uses the brake fallback, and the cause is not diagnosed in this scene.
 - Persons don't react to the robot, as in Stage 0. The 37 mm tracking lag is a weld-compliance measurement, not a comfort result.
 
+## Stage A: free-base standing (no weld)
+
+`balance.py` tests whether a feedback law can keep the free-standing T800 upright. There is no weld and no mocap body. Every joint is PD-controlled (kp 600, kd 20, both assumptions from the sweep). The controller adds:
+
+- **Ankle strategy:** ankle pitch correction from the whole-body centre-of-mass error relative to the feet (sign +1, kc 3, kv 0.5 on the CoM error rate). The sign was chosen by sweep.
+- **Hip strategy:** hip pitch correction from the signed pelvis pitch (sign +1, kh 2).
+
+Ankle-only feedback held the robot, but only with a steady lean of about 9° and the pelvis at 1.01 m. Adding the hip term brought the final tilt to about 3.4°.
+
+Results (MuJoCo 3.2.3, sandbox, dt 0.002 s):
+
+| Test | Result |
+| --- | --- |
+| Quiet standing, 10 s and 20 s | Held. Final tilt 3.4°, max tilt 4.4°. Both feet on the floor (8 contacts each). |
+| 20 N and 40 N pushes (0.2 s) | Recovered. |
+| 150 N pushes, forward, sideways | Recovered (tilt 4–5°). |
+| 150 N push backward (−x) | Fell at 4.7 s (max tilt 24°). |
+| 300 N pushes (x, y) and 500 N (x) | Fell at 3.8–4.2 s. |
+| Sweep of 18 gain sets (kc 2–4, kv 0.5–1, kh 1–3) | None held quiet standing and both the −150 N and +300 N pushes. |
+
+Open questions and caveats:
+
+- **Not a balance controller that handles pushes.** It holds quiet standing and small pushes only. Larger pushes need a different strategy (stepping, or a fuller whole-body controller). I haven't tried those.
+- **Standing height is 1.01 m, not 0.87 m.** The keyframe height (0.87 m) was for the welded case. The reason for the taller stance is not checked.
+- **Ankle torque limit: inconclusive.** During the −150 N push the ankle command saturated at its 160 N·m limit for 313 steps, and the hips did not saturate. But doubling the ankle limit in the model gave identical results, so I can't attribute the fall to the limit. The result is not settled.
+- **Gains are selected on the same pushes used to report them.** Treat the push results as a check on the chosen gains, not as held-out evidence.
+- Only 1 contact-free test per push direction; no noise, delay or model error. This is simulation only.
+

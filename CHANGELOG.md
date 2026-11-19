@@ -2,6 +2,15 @@
 
 All notable changes to this design record. Format inspired by Keep a Changelog; the project is pre-implementation, so entries are design records rather than releases.
 
+## [0.12.0] — 2026-11-18 — T800 free-base standing: ankle and hip feedback (simulation)
+
+**Added**
+
+- `sim/t800/balance.py`: free-base standing test with no weld. Ankle strategy on the CoM error, hip strategy on pelvis pitch. Gain sweep, push tests, and a `--validate` mode.
+- `sim/t800/README.md` Stage A section: results and open questions.
+
+**Result:** quiet standing holds for 20 s (final tilt 3.4°), and 150 N pushes forward or sideways are recovered. A 150 N backward push and 300 N pushes make the robot fall. No gain set in an 18-point sweep handled all tests. Ankle torque limit: inconclusive.
+
 ## [0.11.0] — 2026-11-18 — Python dashboard for the T800 planar NMPC
 
 **Added**
