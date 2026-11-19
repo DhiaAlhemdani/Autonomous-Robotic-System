@@ -41,6 +41,16 @@ The system is organised as five layers spanning four orders of magnitude in band
 
 > *Superseded for the humanoid (`docs/11` §2.1): wheel drive and encoder assumptions in this table.*
 
+**Humanoid view (draft, `docs/11` §2.1; full mapping in §11.1).** The layer roles of this diagram carry over to the humanoid with these changes:
+
+- L0 perception and estimation: wheel odometry is removed. Estimation uses IMU, joint states and foot contact (`docs/14` §2.3).
+- L1 becomes two loops: locomotion at 100 Hz (outer) and the joint servo at a target of ≥ 1 kHz (inner). The FOC cascade is removed.
+- L2 is the safety supervisor and keeps veto power over L3 and L5, as here. It is not a CBF filter on wheel `(v, ω)`; its humanoid checks are in `docs/14` §4.
+- L3 is NMPC on the base, outputting a body-frame `(vx, vy, ω)` reference (`docs/15`).
+- L4 and L5 are unchanged in role. Their humanoid rates are not re-checked yet.
+
+The rule that L5 and L4 cannot command actuators directly still holds for the humanoid.
+
 ## 2. Compute allocation
 
 | Unit | Runs | Rationale |
@@ -51,6 +61,16 @@ The system is organised as five layers spanning four orders of magnitude in band
 The interface between them is a **bounded, versioned serial or CAN protocol**: fixed-length frames, sequence numbers, CRC, explicit limits, and a heartbeat. Loss of heartbeat ⇒ MCU ramps torque to zero **(wheeled base only; not safe for the humanoid, see §11.4)**. The high-level computer may fail at any moment without endangering the robot — this is a hard architectural requirement (SF-01, SF-02).
 
 > *Superseded for the humanoid (`docs/11` §2.1, §2.2): `wheel_odom`, `bridge_mcu` (`wheel_cmd`), and the `(v, ω)` path in `nmpc_controller` and `safety_filter`. The rest of this graph is kept as the sensing and planning structure, to be re-checked for the humanoid.*
+
+**Humanoid compute (draft, decision open).**
+
+| Unit | Runs (humanoid) | Status |
+| --- | --- | --- |
+| Edge computer | L0 estimation, L1 locomotion (100 Hz), L2 supervisor, L3 NMPC, L4, L5, logging | Proposed. Rates from `docs/14` §2 and `docs/15` §6 |
+| Joint servo (L1 inner loop, ≥ 1 kHz target) | MCU **or** edge computer | **Open** (§11.3). The MCU position, if chosen, is a decision for the owner |
+| Interface | Bounded, versioned protocol with CRC and heartbeat | Still required. The heartbeat behaviour is in §11.4, not the wheeled rule |
+
+The edge computer may fail at any time. Whether the robot survives that depends on the MCU-side rule in §11.4 and on the open decision in `docs/14` §4.7. The claim in §2 that the robot is safe without the high-level computer is **not** made for the humanoid until that decision is taken.
 
 ## 3. ROS 2 node graph
 
@@ -135,6 +155,23 @@ The system never fails silently. Each level is a state published on `safety_stat
 | **Recovery** | Operator clearance / fault cleared | Re-initialise estimator, re-plan from current pose, log the event |
 
 **Feasibility rule:** if the NMPC problem is infeasible or the solve exceeds its deadline, the controller falls back in this exact order — (1) re-solve with slack-relaxed constraints, (2) switch to a conservative reactive controller with a verified stopping envelope, (3) protective stop. The fallback chain is implemented and tested *before* the NMPC is tuned, because the fallback is what the robot actually relies on.
+
+### 6.1 Humanoid degradation ladder (draft)
+
+The states below are the humanoid's. They are defined in `docs/14` §4.2 and §4.3, and the names here match them.
+
+| Level | Trigger | Humanoid response |
+| --- | --- | --- |
+| **Nominal** | All health signals good | Full autonomy; L1 locomotion follows L3 commands (S0) |
+| **Degraded sensing** | One perception modality lost or stale | As above: reduced speed limit, larger margins, lost cells marked unknown |
+| **Reduced autonomy** | Localisation uncertainty above threshold, or map inconsistency | Stop exploring; L1 stops the gait and returns to `pd_stand` (S1). Speed limited |
+| **Protective stop** | Safety field violated, or NMPC infeasible beyond the recovery window | Hold stance (S2). **Not** a brake; the gait is stopped by ramping the command to zero |
+| **Fall mitigation** | Stance cannot be held (`docs/14` §4.3 triggers) | Fall posture (S3), if the fall-posture controller exists (open, §11.4) |
+| **Safe stop** | MCU heartbeat loss, watchdog, E-stop, critical fault | Replaced by the S2–S4 rule in §11.4. Torque removal (S4) is the last state and is a fall. No brakes |
+| **Recovery** | Operator clearance | Stand-up is **out of scope** (`docs/14` §4.6). Requires its own design |
+
+The feasibility rule above applies to the humanoid NMPC without change. Its fallback steps are defined in `docs/15` §7.
+
 
 ## 7. Data and logging architecture
 
@@ -240,13 +277,13 @@ L4 (global planning) and L5 (mission policy) of §1 are kept unchanged. L0 perce
 
 1. **Numbering: resolved.** The humanoid now uses the §1 numbers for the same roles (L0, L1, L2, L3). Locomotion and the joint servo share L1 as two loops; the project owner accepted this sharing. `docs/14` uses the same numbers. §1 and §2 still need their text rewritten to match.
 2. **Heartbeat loss (§2).** The rule "loss of heartbeat ⇒ MCU ramps torque to zero" is unsafe for a humanoid. Ramping torque to zero makes an upright robot fall. Interim humanoid rule in §11.4; the decision is open.
-3. **Safe stop (§6).** "Torque removed, brakes engaged" does not apply. A humanoid has no brakes. Its safe stop is the state chosen in `docs/14` §4, which is a proposal awaiting the project owner's decision (O4).
-4. **Compute allocation (§2).** Doc 02 places L1 current control on the MCU. Where the humanoid's joint servo runs (MCU or edge computer) is not decided. The timing requirement is in `docs/14` §2.1.
+3. **Safe stop (§6).** "Torque removed, brakes engaged" does not apply. The humanoid ladder is in §6.1. Its safe stop is the state chosen in `docs/14` §4, which is awaiting the project owner's decision (O4).
+4. **Compute allocation (§2).** The humanoid compute table is in §2. Where the joint servo runs (MCU or edge computer) is not decided. The timing requirement is in `docs/14` §2.1.
 
 ### 11.3 Not decided here
 
 - The humanoid NMPC design: proposed in `docs/15`, not frozen. Solver choice and timing budget are open until measured.
-- Whether the joint servo runs on the MCU or the edge computer.
+- Whether the joint servo runs on the MCU or the edge computer (§2 and §11.4 depend on it).
 - The data and logging formats for the humanoid (§7 is superseded for the MCU frame format).
 - Whether the RL mission policy (L5 in §1) remains a learned layer above the navigation layer. This is a scope question, not an architecture change, and is left to `docs/00`.
 
