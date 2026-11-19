@@ -1,10 +1,14 @@
-# 02 — System Architecture
+# 02 — System Architecture (T800 humanoid)
 
-> **Platform revision (`docs/11` §2.1 and §2.2).** The platform is now the T800 humanoid. The wheeled-robot parts of this document are **superseded**, and they are left in place so the change stays visible. Superseded items: the wheel-based `(v, ω)` and wheel-torque references (L3 output, §1 and §5), the wheel-drive FOC cascade (L1), wheel odometry and encoders (L0, §3), the wheel bridge (`bridge_mcu`, `wheel_cmd`), and the MCU joint-sensing assumptions (§2). A joint-level architecture for the humanoid, with the locomotion layer, is **not yet specified**. Until it is, read this document for its sensing, planning, safety and logging structure only.
+> **Platform.** The platform is the **T800 humanoid** (`docs/00` §4, `docs/01` §8). The wheeled-robot architecture has been removed from this document. Where a value is not yet known for the humanoid it is marked **TBD**, not carried over from the wheeled design.
+>
+> **Owner decisions recorded here:** the NMPC stays at L3, and the locomotion layer (L1 outer loop) and the joint servo (L1 inner loop) run on the MCU. The walking policy running on the MCU is **not yet shown feasible**. The fall-posture controller and the safe-stop design are **open** (§6).
+>
+> **Not yet specified:** the joint-level interface, the MCU frame format, and the humanoid safety-supervisor checks. No interface is frozen until they are (§8).
 
 ## 1. Layer model and rate bands
 
-The system is organised as five layers spanning four orders of magnitude in bandwidth. The rate separation is not cosmetic: each layer must be at least 5–10× slower than the layer below it, so that the inner loop is transparent to the outer one (a standard cascade-control requirement).
+The system is organised as five layers. Each layer runs at least 5–10× slower than the layer below it, so the inner loop is transparent to the outer one.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -18,84 +22,65 @@ The system is organised as five layers spanning four orders of magnitude in band
 │     In: map + goal          Out: path in world frame                        │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │ L3  LOCAL PLANNING & TRACKING (NMPC) ........................... 20–50 Hz   │
-│     NMPC: obstacle-constrained, kinodynamic trajectory optimisation         │
+│     NMPC on the base: obstacle-constrained trajectory optimisation          │
 │     In: path, local costmap, state estimate, safety field                   │
-│     Out: (v, ω) or wheel torque references                                  │
+│     Out: body-frame velocity reference (vx, vy, ω)                          │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│ L2  SAFETY FILTER & SUPERVISOR ................................ 100–200 Hz  │
-│     CBF-QP shield + feasibility monitor + speed limiter + watchdog          │
-│     In: RL/MPC command, obstacle distance, health signals                   │
+│ L2  SAFETY SUPERVISOR & FILTER ................................ 100–200 Hz  │
+│     Feasibility monitor, speed limiter, watchdog, veto over L3 and L5       │
+│     In: L3/L5 command, obstacle distance, health signals                    │
 │     Out: admissible command              [independent of L5]                │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│ L1  DRIVE: PMSM FIELD-ORIENTED / MPC CURRENT CONTROL .......... 10–20 kHz   │
-│     FOC cascade (or NMPC current loop): i_d, i_q regulation, SVPWM          │
-│     In: torque/speed reference     Out: PWM to inverter                     │
+│ L1  LOCOMOTION (outer, 100 Hz) + JOINT SERVO (inner, ≥ 1 kHz target) ...    │
+│     Both run on the MCU (owner decision; walking-policy feasibility open)   │
+│     In: body velocity reference, IMU, joint states, foot contact            │
+│     Out: joint torque/position commands                                     │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │ L0  PERCEPTION & ESTIMATION (runs in parallel, feeds L3–L5)                 │
 │     LiDAR → scan matching/SLAM (10–20 Hz)   Camera → detection/depth (30 Hz)│
-│     IMU 200–1000 Hz + encoders 1–10 kHz → EKF fusion → odometry 100–200 Hz  │
+│     IMU + joint states + foot contact → state estimate (100–1000 Hz)        │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Key architectural rule:** L5 (learned) and L4 cannot command actuators directly. All commands pass through L2, which is not learning-enabled and holds veto power. This is what makes a neural policy admissible on physical hardware.
+**Key architectural rule:** L5 (learned) and L4 cannot command the actuators directly. All commands pass through L2, which is not learning-enabled and holds veto power over L3 and L5.
 
-> *Superseded for the humanoid (`docs/11` §2.1): wheel drive and encoder assumptions in this table.*
-
-**Humanoid view (draft, `docs/11` §2.1; full mapping in §11.1).** The layer roles of this diagram carry over to the humanoid with these changes:
-
-- L0 perception and estimation: wheel odometry is removed. Estimation uses IMU, joint states and foot contact (`docs/14` §2.3).
-- L1 becomes two loops: locomotion at 100 Hz (outer) and the joint servo at a target of ≥ 1 kHz (inner). The FOC cascade is removed.
-- L2 is the safety supervisor and keeps veto power over L3 and L5, as here. It is not a CBF filter on wheel `(v, ω)`; its humanoid checks are in `docs/14` §4.
-- L3 is NMPC on the base, outputting a body-frame `(vx, vy, ω)` reference (`docs/15`).
-- L4 and L5 are unchanged in role. Their humanoid rates are not re-checked yet.
-
-The rule that L5 and L4 cannot command actuators directly still holds for the humanoid.
+Rates marked as targets (the joint servo at ≥ 1 kHz, the NMPC at 20–50 Hz) are not measured on the target hardware. Estimation has no wheel odometry: the state comes from IMU, joint states and foot contact.
 
 ## 2. Compute allocation
 
 | Unit | Runs | Rationale |
 | --- | --- | --- |
-| **MCU** (STM32-class, FPU) | L1 current control, encoder capture, IMU sampling, watchdog, safety stop path, serial/CAN bridge | Hard real-time, deterministic, no OS scheduling jitter; survives a crash of the high-level computer |
-| **Edge GPU computer** (Jetson-class) | L0 perception/estimation, L3 NMPC, L4 planning, L5 policy, logging | Floating-point and neural inference; soft real-time with measured jitter |
+| **MCU** (STM32-class, FPU, ≥ 100 MHz) | L1 locomotion (100 Hz) and joint servo (≥ 1 kHz target), IMU sampling, joint-state capture, watchdog, serial/CAN bridge, stop path | Hard real-time, deterministic. Owner decision: L1 runs here. The processor budget for the walking policy is **not yet measured** |
+| **Edge GPU computer** (Jetson-class, ≥ 8 GB) | L0 estimation and perception, L2 supervisor, L3 NMPC, L4 planning, L5 policy, logging | Floating-point and neural inference; soft real-time with measured jitter |
 
-The interface between them is a **bounded, versioned serial or CAN protocol**: fixed-length frames, sequence numbers, CRC, explicit limits, and a heartbeat. Loss of heartbeat ⇒ MCU ramps torque to zero **(wheeled base only; not safe for the humanoid, see §11.4)**. The high-level computer may fail at any moment without endangering the robot — this is a hard architectural requirement (SF-01, SF-02).
+The interface between them is a **bounded, versioned serial or CAN protocol**: fixed-length frames, sequence numbers, CRC, explicit limits, and a heartbeat. The frame format is not frozen (§8).
 
-> *Superseded for the humanoid (`docs/11` §2.1, §2.2): `wheel_odom`, `bridge_mcu` (`wheel_cmd`), and the `(v, ω)` path in `nmpc_controller` and `safety_filter`. The rest of this graph is kept as the sensing and planning structure, to be re-checked for the humanoid.*
+The edge computer may fail at any time. What the robot does then depends on the MCU-side rule in §6, which is **open**. No claim is made that the robot is safe without the edge computer.
 
-**Humanoid compute (draft, decision open).**
-
-| Unit | Runs (humanoid) | Status |
-| --- | --- | --- |
-| Edge computer | L0 estimation, L2 supervisor, L3 NMPC, L4, L5, logging | Proposed. Rates from `docs/14` §2 and `docs/15` §6 |
-| L1 locomotion (outer loop, 100 Hz) | **MCU** | **Decided by the project owner.** Requires the walking policy to run on the MCU; not yet shown feasible (see §11.3) |
-| L1 joint servo (inner loop, ≥ 1 kHz target) | **MCU** | **Decided by the project owner.** Hard real-time control runs on the MCU |
-| Interface | Bounded, versioned protocol with CRC and heartbeat | Still required. The heartbeat behaviour is in §11.4, not the wheeled rule |
-
-The edge computer may fail at any time. Whether the robot survives that depends on the MCU-side rule in §11.4 and on the open decision in `docs/14` §4.7. The claim in §2 that the robot is safe without the high-level computer is **not** made for the humanoid until that decision is taken.
-
-## 3. ROS 2 node graph
+## 3. ROS 2 node graph (humanoid)
 
 | Node | Layer | Subscribes | Publishes | Rate | QoS |
 | --- | --- | --- | --- | --- | --- |
 | `lidar_driver` | L0 | — | `scan` | 10–20 Hz | SensorDataQoS (best-effort) |
 | `camera_driver` | L0 | — | `image_raw`, `depth`, `camera_info` | 30 Hz | SensorDataQoS |
-| `imu_driver` | L0 → MCU | — | `imu/data_raw` | 200–1000 Hz | SensorDataQoS |
-| `wheel_odom` | L0 → MCU | `joint_states` | `odom` | 50–100 Hz | Reliable |
-| `ekf_fusion` | L0 | `imu/data`, `odom`, `scan` | `odom/fused`, TF `odom→base_link` | 100–200 Hz | Reliable |
+| `imu_driver` | L0 (MCU source) | — | `imu/data_raw` | 200–1000 Hz | SensorDataQoS |
+| `joint_state_driver` | L0 (MCU source) | — | `joint_states` | 100–1000 Hz | SensorDataQoS |
+| `state_estimator` | L0 | `imu/data`, `joint_states`, foot contact, `scan` | `odom/fused`, TF `odom→base_link` | 100–200 Hz | Reliable |
 | `slam` | L0 | `scan`, `odom/fused` | `map`, TF `map→odom` | 10–20 Hz | Reliable + transient local |
 | `perception_detector` | L0 | `image_raw`, `depth` | `detections`, `obstacles` | 15–30 Hz | Reliable |
 | `costmap_builder` | L0 | `scan`, `obstacles`, `map` | `local_costmap` | 10–20 Hz | Volatile |
 | `global_planner` | L4 | `map`, goal | `global_path` | on request | Reliable |
-| `nmpc_controller` | L3 | `global_path`, `local_costmap`, `odom/fused` | `cmd_vel_raw` | 20–50 Hz | Reliable |
-| `safety_filter` | L2 | `cmd_vel_raw`, `safety_field`, health | `cmd_vel_safe` | 100–200 Hz | Reliable |
+| `nmpc_controller` | L3 | `global_path`, `local_costmap`, `odom/fused` | `body_vel_ref` (vx, vy, ω) | 20–50 Hz | Reliable |
+| `safety_supervisor` | L2 | `body_vel_ref`, `safety_field`, health | `body_vel_safe`, `safety_state`, `estop` | 100–200 Hz | Reliable |
 | `rl_policy` | L5 | `map`, summary, goal list | `behavior_cmd` | 1–5 Hz | Reliable |
-| `safety_supervisor` | L2 | health topics, heartbeat | `safety_state`, `estop` | 50 Hz | Reliable |
-| `bridge_mcu` | L2 (MCU path) | `cmd_vel_safe` | `wheel_cmd` (serial frame) | 100 Hz | Reliable |
+| `mcu_bridge` | L2 (MCU path) | `body_vel_safe` | serial/CAN frame | 100 Hz | Reliable |
 | `logger` | all | selected topics | MCAP bag + JSONL events | event/periodic | Reliable, buffered |
 
-**QoS discipline:** sensor streams are best-effort with a shallow queue (never block a driver on a consumer); commands are reliable with a depth of 1 (always the newest command — a stale command is worse than a dropped one). The map and any single-writer topic use transient-local durability so late-joining nodes get the current state.
+**QoS discipline:** sensor streams are best-effort with a shallow queue. Commands are reliable with a depth of 1 (the newest command only; a stale command is worse than a dropped one). The map and any single-writer topic use transient-local durability.
 
-**Executor discipline:** drivers and the control path run in separate callback groups with a multi-threaded executor; no control-path callback performs allocation, I/O or logging. Image transport uses zero-copy shared memory where available — a copy of a 1080p frame costs more than the NMPC solve.
+**Executor discipline:** drivers and the control path run in separate callback groups with a multi-threaded executor. No control-path callback performs allocation, I/O or logging. Image transport uses zero-copy shared memory where available.
+
+**Humanoid estimation.** The estimator fuses IMU, joint states and foot contact. Its covariance is required by §6. Its accuracy on the T800 is not yet measured.
 
 ## 4. Timing and synchronisation
 
@@ -103,13 +88,11 @@ The edge computer may fail at any time. Whether the robot survives that depends 
 | --- | --- |
 | Clock | All nodes use the monotonic ROS clock; sensor timestamps are taken at acquisition (hardware), never at publish |
 | Time sync | MCU ↔ computer over PTP or a compensated round-trip estimate; drift monitored and logged |
-| Latency budget | Sensor acquisition → perception → costmap → NMPC → safety filter → serial → PWM, measured end-to-end and reported as p50/p99/max (PR-06) |
-| Jitter | Control-path period jitter measured and reported; a controller whose timing is unmeasured is not considered validated |
+| Latency budget | Sensor acquisition → perception → costmap → NMPC → safety supervisor → MCU → locomotion → joint servo → actuators, measured end-to-end and reported as p50/p99/max (PR-06) |
+| Jitter | Control-path period jitter measured and reported. A controller whose timing is unmeasured is not considered validated |
 | Bagging | MCAP with per-topic recording and an event log (state transitions, safety interventions) |
 
-> *Superseded for the humanoid (`docs/11` §2.2): the L3 output `u_mpc = (v, ω)` and the L1 wheel drive in the diagram below. The locomotion layer that the humanoid needs is not in this diagram.*
-
-## 5. Control architecture: RL + NMPC + safety
+## 5. Control architecture
 
 ```
         goal list
@@ -124,23 +107,24 @@ The edge computer may fail at any time. Whether the robot survives that depends 
      summary, health       └──────────────────────┘
                                       │ global path
                                       ▼
-                            ┌──────────────────────┐   u_mpc = (v, ω)
-                            │ L3 NMPC              │──────────┐   [optimal, model-based]
+                            ┌──────────────────────┐   body_vel_ref (vx, vy, ω)
+                            │ L3 NMPC (base)       │──────────┐   [optimal, model-based]
                             └──────────────────────┘          │
                                       ▲                       ▼
                             state, costmap      ┌──────────────────────────┐
-                                                │ L2 SAFETY FILTER (CBF-QP)│
+                                                │ L2 SUPERVISOR & FILTER   │
                                                 │ + feasibility monitor    │
                                                 │ + speed limiter          │
                                                 └──────────────────────────┘
-                                                             │ u_safe
+                                                             │ body_vel_safe
                                                              ▼
-                                                   ┌──────────────────┐
-                                                   │ L1 FOC (MCU)     │
-                                                   └──────────────────┘
+                                                   ┌──────────────────────┐
+                                                   │ L1 locomotion (MCU)  │
+                                                   │ → joint servo (MCU)  │
+                                                   └──────────────────────┘
 ```
 
-Three candidate integration topologies are analysed in [`theory/06-rl-mpc-integration-and-safety.md`](theory/06-rl-mpc-integration-and-safety.md). The baseline architecture is **hierarchical (RL above MPC) with an MPC/CBF safety filter below** — the only combination in which every layer's failure mode is bounded, and the one that can be defended without a proof of the policy's behaviour.
+The rule that L5 and L4 cannot command actuators directly holds. The safety filter method for the humanoid (replacing the wheeled CBF-QP on `(v, ω)`) is **TBD**. The L5 choice of behaviour is bounded (§9.4).
 
 ## 6. Degradation ladder
 
@@ -148,31 +132,17 @@ The system never fails silently. Each level is a state published on `safety_stat
 
 | Level | Trigger | Response |
 | --- | --- | --- |
-| **Nominal** | All health signals good | Full autonomy |
-| **Degraded sensing** | One perception modality lost/stale | Continue with reduced speed limit and enlarged safety margins; mark map cells from the lost sensor as unknown |
-| **Reduced autonomy** | Localisation uncertainty above threshold, or map inconsistency | Stop exploring, retrace the known-good path, limit speed |
-| **Protective stop** | Safety field violated, or NMPC infeasible beyond the recovery window | Controlled stop, hold, request operator |
-| **Safe stop** | MCU heartbeat loss, watchdog timeout, E-stop, critical fault | Wheeled base: torque removed by MCU, brakes engaged. Humanoid: see §11.4 (torque removal can make the robot fall) |
-| **Recovery** | Operator clearance / fault cleared | Re-initialise estimator, re-plan from current pose, log the event |
+| **Nominal** | All health signals good | Full autonomy; L1 follows the L3 body-velocity reference |
+| **Degraded sensing** | One perception modality lost or stale | Reduced speed limit, larger margins; map cells from the lost sensor marked unknown |
+| **Reduced autonomy** | Localisation uncertainty above threshold, or map inconsistency | Stop exploring; L1 stops the gait and holds stance; speed limited |
+| **Protective stop** | Safety field violated, or NMPC infeasible beyond the recovery window | Hold stance. The gait is stopped by ramping the velocity command to zero, **not** by removing torque |
+| **Fall mitigation** | Stance cannot be held (tilt or loss of foot contact beyond a threshold) | Fall posture, **if** a fall-posture controller exists. **Open**: not designed, and the MCU may not be able to run it without the edge computer |
+| **Safe stop** | MCU heartbeat loss, watchdog timeout, E-stop, critical fault | **Open.** Removing torque on a humanoid is a fall, and no brake exists. The MCU-side rule is undecided (see below) |
+| **Recovery** | Operator clearance | Stand-up is **out of scope** until it has its own design |
 
-**Feasibility rule:** if the NMPC problem is infeasible or the solve exceeds its deadline, the controller falls back in this exact order — (1) re-solve with slack-relaxed constraints, (2) switch to a conservative reactive controller with a verified stopping envelope, (3) protective stop. The fallback chain is implemented and tested *before* the NMPC is tuned, because the fallback is what the robot actually relies on.
+**Edge-computer loss (open).** The current proposal is: the MCU keeps the locomotion and joint servo running and holds stance, rather than removing torque while upright. If it cannot hold, the only MCU action left is torque removal, which is a fall. Whether a fall-posture controller runs on the MCU is undecided. The heartbeat timeout is **TBD** and must be set from measured hold time in simulation.
 
-### 6.1 Humanoid degradation ladder (draft)
-
-The states below are the humanoid's. They are defined in `docs/14` §4.2 and §4.3, and the names here match them.
-
-| Level | Trigger | Humanoid response |
-| --- | --- | --- |
-| **Nominal** | All health signals good | Full autonomy; L1 locomotion follows L3 commands (S0) |
-| **Degraded sensing** | One perception modality lost or stale | As above: reduced speed limit, larger margins, lost cells marked unknown |
-| **Reduced autonomy** | Localisation uncertainty above threshold, or map inconsistency | Stop exploring; L1 stops the gait and returns to `pd_stand` (S1). Speed limited |
-| **Protective stop** | Safety field violated, or NMPC infeasible beyond the recovery window | Hold stance (S2). **Not** a brake; the gait is stopped by ramping the command to zero |
-| **Fall mitigation** | Stance cannot be held (`docs/14` §4.3 triggers) | Fall posture (S3), if the fall-posture controller exists (open, §11.4) |
-| **Safe stop** | MCU heartbeat loss, watchdog, E-stop, critical fault | Replaced by the S2–S4 rule in §11.4. Torque removal (S4) is the last state and is a fall. No brakes |
-| **Recovery** | Operator clearance | Stand-up is **out of scope** (`docs/14` §4.6). Requires its own design |
-
-The feasibility rule above applies to the humanoid NMPC without change. Its fallback steps are defined in `docs/15` §7.
-
+**Feasibility rule:** if the NMPC problem is infeasible or the solve exceeds its deadline, the controller falls back in this order: (1) re-solve with slack-relaxed constraints, (2) a conservative reactive controller with a verified stopping envelope (**TBD** for the humanoid), (3) protective stop. The fallback chain is implemented and tested *before* the NMPC is tuned.
 
 ## 7. Data and logging architecture
 
@@ -186,7 +156,7 @@ The feasibility rule above applies to the humanoid NMPC without change. Its fall
 
 **Rule:** a result is only reportable if the run directory contains a complete metadata record. Tooling rejects runs without it.
 
-> *Superseded for the humanoid (`docs/11` §2.1): the MCU frame format and the wheel-drive fields. No interface is frozen for the humanoid yet.*
+> The MCU frame format is not frozen for the humanoid (§8).
 
 ## 8. Interface freeze
 
@@ -196,7 +166,7 @@ Before implementation begins, these interfaces are written down and frozen: the 
 
 **Status:** proposal, not yet agreed. Recorded as a change record under the rule in §8. Nothing in §§1–8 is changed by this section. The sim-to-real layer is deliberately excluded and will be specified separately.
 
-**Motivation.** The mission environment is unmapped and contains static and movable objects and people. The dominant nonlinearity has two sources: known dynamics and constraints (wheel slip, actuator limits, obstacle geometry), and unknown interaction (how a movable object moves when contacted, how a person reacts). These are handled by different tools.
+**Motivation.** The mission environment is unmapped and contains static and movable objects and people. The dominant nonlinearity has two sources: known dynamics and constraints (foot contact, actuator limits, obstacle geometry), and unknown interaction (how a movable object moves when contacted, how a person reacts). These are handled by different tools.
 
 ### 9.1 Perception (L0): output contract
 
@@ -250,52 +220,9 @@ All candidates are compared on identical runs of scenarios S1–S5 (`docs/00` §
 
 ## 10. Change record: platform revision
 
-- **Basis:** `docs/11` §2 (consequences of the platform change), §7 (T800 platform decision). `docs/11` §2.1 and §2.2 name the superseded items marked above.
-- **Superseded:** the wheel-based control references, the wheel-drive FOC cascade, wheel odometry and encoders, the wheel bridge, the MCU joint-sensing assumptions, and the wheeled interface frame. Each is marked in place.
-- **Not yet specified:** the joint-level architecture for the humanoid, including the locomotion layer. This is a separate design task. Until it exists, no interface is frozen for the humanoid, and the interface freeze in §8 does not apply to the superseded items.
-- **Draft added (§11):** humanoid layer mapping to `docs/14`. Numbering conflict resolved in §11; three further conflicts with §§2 and 6 recorded, not yet resolved in the text above.
-- **Unchanged:** the layer model as a structure, the degradation ladder (§6), the logging architecture (§7), the timing rules (§4), and the perception and planning contract in §9, which remains a proposal under review.
+- **Platform:** the T800 humanoid (`docs/00` §4, `docs/01` §8, `docs/11`). The wheeled architecture is removed from §§1–6 and from the ROS graph.
+- **Removed (wheeled):** the `(v, ω)` references, the wheel-drive FOC cascade, wheel odometry and encoders, the wheel bridge (`bridge_mcu` / `wheel_cmd`), `wheel_odom`, the wheel-torque L1, the wheeled safe-stop rule (torque removal with brakes), and the CBF-QP filter on `(v, ω)`.
+- **Folded in (from the former §11 draft):** the NMPC stays at L3; L1 locomotion and the joint servo run on the MCU; the walking-policy feasibility on the MCU and the edge-loss rule are open. The former §11 is now in §§1–6.
+- **Not yet specified:** the joint-level interface, the MCU frame format, the humanoid safety-supervisor checks, and the fall-posture controller. No interface is frozen for the humanoid, and the interface freeze in §8 applies once they are.
+- **Unchanged:** the layer model structure, the logging architecture (§7, except the frame format), the timing rules (§4), the feasibility rule (§6), and the perception and planning contract in §9, which remains a proposal under review.
 
-## 11. Humanoid layer model (draft, maps to `docs/14`)
-
-> **Status: draft, not frozen.** This section starts the humanoid revision that §10 says is not yet done. The joint-level detail is in [`docs/14`](docs/14-humanoid-joint-architecture.md). Nothing here is validated, and the rules of §§1–8 apply to the humanoid only where this section says so.
-
-### 11.1 Mapping
-
-The humanoid has no wheel drive, so some layer roles change. The humanoid stack reuses the §1 number for the same role where one exists, so the numbering stays shared across both platforms. The joint stack is one number with two loops.
-
-| Humanoid layer (`docs/14`) | Rate (draft) | Same role as §1 | Note |
-| --- | --- | --- | --- |
-| **L3 Navigation & command shaping (NMPC)** | 10–20 Hz | L3 local planning (NMPC) | Output is body-frame `(vx, vy, ω)`, not `(v, ω)` for a wheel base. NMPC stays at L3 (owner decision). Design proposed in `docs/15` |
-| **L1 Locomotion (outer loop)** | 100 Hz | none (new) | Gait and balance. Baseline is the upstream RL walking policy, not evaluated here |
-| **L1 Joint servo (inner loop)** | ≥ 1 kHz (target) | L1 drive | Joint PD and torque limits. Replaces the FOC cascade; the rate is a target, not verified |
-| **L0 State estimation** | 100–1000 Hz | L0 odometry | IMU, joint states and foot contact. Wheel odometry is removed |
-| **L2 Safety supervisor** | 50–200 Hz | L2 safety filter | Independent of L1 and L3. Holds veto power, as in §1 |
-
-L4 (global planning) and L5 (mission policy) of §1 are kept unchanged. L0 perception (LiDAR, camera) is kept as the sensing structure, with humanoid rates to be re-checked.
-
-### 11.2 Conflicts with the existing text
-
-1. **Numbering: resolved.** The humanoid now uses the §1 numbers for the same roles (L0, L1, L2, L3). Locomotion and the joint servo share L1 as two loops; the project owner accepted this sharing. `docs/14` uses the same numbers. §1 and §2 still need their text rewritten to match.
-2. **Heartbeat loss (§2).** The rule "loss of heartbeat ⇒ MCU ramps torque to zero" is unsafe for a humanoid. Ramping torque to zero makes an upright robot fall. Interim humanoid rule in §11.4; the decision is open.
-3. **Safe stop (§6).** "Torque removed, brakes engaged" does not apply. The humanoid ladder is in §6.1. Its safe stop is the state chosen in `docs/14` §4, which is awaiting the project owner's decision (O4).
-4. **Compute allocation (§2).** Resolved: L1 locomotion and the joint servo both run on the MCU, as decided by the project owner. The consequence for the MCU's compute is open (§11.3).
-
-### 11.3 Not decided here
-
-- The humanoid NMPC design: proposed in `docs/15`, not frozen. Solver choice and timing budget are open until measured.
-- **Feasibility of L1 locomotion on the MCU.** The owner decided the MCU runs it. The upstream walking policy is a 4.3 MB network run at 100 Hz (`docs/14` §2.2). Nothing in the repo shows the MCU can run it. The MCU's processor, memory and inference time must be measured before this decision is relied on.
-- The data and logging formats for the humanoid (§7 is superseded for the MCU frame format).
-- Whether the RL mission policy (L5 in §1) remains a learned layer above the navigation layer. This is a scope question, not an architecture change, and is left to `docs/00`.
-
-### 11.4 Heartbeat loss and the MCU for the humanoid (proposal, decision open)
-
-The wheeled rule (`ramp torque to zero`, §2 and §6) is withdrawn for the humanoid. Torque removal is only ever the final state, S4 in `docs/14` §4.2, reached after the fall-handling states have failed or an impact has happened. The rule below is a proposal and needs the project owner's decision.
-
-**Interim rule (ASSUMPTION for all timing values):**
-
-1. **Edge computer lost (no heartbeat for T_hb):** the MCU keeps running L1 locomotion and the joint servo. It stops accepting new velocity commands and holds stance (`pd_stand`, `docs/14` §2.2). It does not ramp torque to zero while the robot is upright. Holding stance depends on the feasibility item in §11.3.
-2. **Hold is not possible** (tilt above θ_hold, or a foot lost contact): the MCU has no fall posture, because the fall posture is planned above the MCU. The only MCU action left is S4, torque off. This is a fall, and the impact is the one `docs/14` §4.4 option 3 accepts. It is the reason for the decision below.
-3. **T_hb:** not set. It must be shorter than the time the hold stays stable in simulation (`docs/14` E7 and E8).
-
-**Open decision (blocks this rule):** whether a fall-posture controller (S3) runs on the MCU, so that the robot can react without the edge computer. If it does not, the rule above can only hold or fall. The MCU runs the joint servo either way (owner decision). The fall-posture question is separate and must be recorded in `docs/14` §4.7.
