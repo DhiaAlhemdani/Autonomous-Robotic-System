@@ -48,7 +48,7 @@ The system is organised as five layers spanning four orders of magnitude in band
 | **MCU** (STM32-class, FPU) | L1 current control, encoder capture, IMU sampling, watchdog, safety stop path, serial/CAN bridge | Hard real-time, deterministic, no OS scheduling jitter; survives a crash of the high-level computer |
 | **Edge GPU computer** (Jetson-class) | L0 perception/estimation, L3 NMPC, L4 planning, L5 policy, logging | Floating-point and neural inference; soft real-time with measured jitter |
 
-The interface between them is a **bounded, versioned serial or CAN protocol**: fixed-length frames, sequence numbers, CRC, explicit limits, and a heartbeat. Loss of heartbeat ⇒ MCU ramps torque to zero. The high-level computer may fail at any moment without endangering the robot — this is a hard architectural requirement (SF-01, SF-02).
+The interface between them is a **bounded, versioned serial or CAN protocol**: fixed-length frames, sequence numbers, CRC, explicit limits, and a heartbeat. Loss of heartbeat ⇒ MCU ramps torque to zero **(wheeled base only; not safe for the humanoid, see §11.4)**. The high-level computer may fail at any moment without endangering the robot — this is a hard architectural requirement (SF-01, SF-02).
 
 > *Superseded for the humanoid (`docs/11` §2.1, §2.2): `wheel_odom`, `bridge_mcu` (`wheel_cmd`), and the `(v, ω)` path in `nmpc_controller` and `safety_filter`. The rest of this graph is kept as the sensing and planning structure, to be re-checked for the humanoid.*
 
@@ -131,7 +131,7 @@ The system never fails silently. Each level is a state published on `safety_stat
 | **Degraded sensing** | One perception modality lost/stale | Continue with reduced speed limit and enlarged safety margins; mark map cells from the lost sensor as unknown |
 | **Reduced autonomy** | Localisation uncertainty above threshold, or map inconsistency | Stop exploring, retrace the known-good path, limit speed |
 | **Protective stop** | Safety field violated, or NMPC infeasible beyond the recovery window | Controlled stop, hold, request operator |
-| **Safe stop** | MCU heartbeat loss, watchdog timeout, E-stop, critical fault | Torque removed by MCU, brakes engaged; no software dependency |
+| **Safe stop** | MCU heartbeat loss, watchdog timeout, E-stop, critical fault | Wheeled base: torque removed by MCU, brakes engaged. Humanoid: see §11.4 (torque removal can make the robot fall) |
 | **Recovery** | Operator clearance / fault cleared | Re-initialise estimator, re-plan from current pose, log the event |
 
 **Feasibility rule:** if the NMPC problem is infeasible or the solve exceeds its deadline, the controller falls back in this exact order — (1) re-solve with slack-relaxed constraints, (2) switch to a conservative reactive controller with a verified stopping envelope, (3) protective stop. The fallback chain is implemented and tested *before* the NMPC is tuned, because the fallback is what the robot actually relies on.
@@ -239,7 +239,7 @@ L4 (global planning) and L5 (mission policy) of §1 are kept unchanged. L0 perce
 ### 11.2 Conflicts with the existing text
 
 1. **Numbering: resolved.** The humanoid now uses the §1 numbers for the same roles (L0, L1, L2, L3). Locomotion and the joint servo share L1 as two loops; the project owner accepted this sharing. `docs/14` uses the same numbers. §1 and §2 still need their text rewritten to match.
-2. **Heartbeat loss (§2).** The rule "loss of heartbeat ⇒ MCU ramps torque to zero" is unsafe for a humanoid. Ramping torque to zero makes an upright robot fall. For the humanoid, heartbeat loss must enter the fall-handling states of `docs/14` §4 (S2 hold, S3 fall mitigation, S4 torque off), not a direct ramp to zero. This is a required change to §2.
+2. **Heartbeat loss (§2).** The rule "loss of heartbeat ⇒ MCU ramps torque to zero" is unsafe for a humanoid. Ramping torque to zero makes an upright robot fall. Interim humanoid rule in §11.4; the decision is open.
 3. **Safe stop (§6).** "Torque removed, brakes engaged" does not apply. A humanoid has no brakes. Its safe stop is the state chosen in `docs/14` §4, which is a proposal awaiting the project owner's decision (O4).
 4. **Compute allocation (§2).** Doc 02 places L1 current control on the MCU. Where the humanoid's joint servo runs (MCU or edge computer) is not decided. The timing requirement is in `docs/14` §2.1.
 
@@ -249,3 +249,15 @@ L4 (global planning) and L5 (mission policy) of §1 are kept unchanged. L0 perce
 - Whether the joint servo runs on the MCU or the edge computer.
 - The data and logging formats for the humanoid (§7 is superseded for the MCU frame format).
 - Whether the RL mission policy (L5 in §1) remains a learned layer above the navigation layer. This is a scope question, not an architecture change, and is left to `docs/00`.
+
+### 11.4 Heartbeat loss and the MCU for the humanoid (proposal, decision open)
+
+The wheeled rule (`ramp torque to zero`, §2 and §6) is withdrawn for the humanoid. Torque removal is only ever the final state, S4 in `docs/14` §4.2, reached after the fall-handling states have failed or an impact has happened. The rule below is a proposal and needs the project owner's decision.
+
+**Interim rule (ASSUMPTION for all timing values):**
+
+1. **Edge computer lost (no heartbeat for T_hb):** the MCU stops accepting new targets and holds the last joint targets with the hold-stance gains of `docs/14` §2.2 (`pd_stand`). It does not ramp torque to zero while the robot is upright.
+2. **Hold is not possible** (tilt above θ_hold, or a foot lost contact): the MCU has no fall posture, because the fall posture is planned above the MCU. The only MCU action left is S4, torque off. This is a fall, and the impact is the one `docs/14` §4.4 option 3 accepts. It is the reason for the decision below.
+3. **T_hb:** not set. It must be shorter than the time the hold stays stable in simulation (`docs/14` E7 and E8).
+
+**Open decision (blocks this rule):** whether a fall-posture controller (S3) runs on the MCU, so that the robot can react without the edge computer. If it does not, the rule above can only hold or fall. Either option changes the compute allocation in §2 and must be recorded in `docs/14` §4.7.
