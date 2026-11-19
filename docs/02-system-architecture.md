@@ -238,13 +238,14 @@ L4 (global planning) and L5 (mission policy) of §1 are kept unchanged. L0 perce
 
 ### 11.2 Conflicts with the existing text
 
-1. **Numbering: resolved.** The humanoid now uses the §1 numbers for the same roles (L0, L1, L2, L3). Locomotion and the joint servo share L1 as two loops. `docs/14` uses the same numbers. §1 and §2 still need their text rewritten to match.
+1. **Numbering: resolved.** The humanoid now uses the §1 numbers for the same roles (L0, L1, L2, L3). Locomotion and the joint servo share L1 as two loops; the project owner accepted this sharing. `docs/14` uses the same numbers. §1 and §2 still need their text rewritten to match.
 2. **Heartbeat loss (§2).** The rule "loss of heartbeat ⇒ MCU ramps torque to zero" is unsafe for a humanoid. Ramping torque to zero makes an upright robot fall. For the humanoid, heartbeat loss must enter the fall-handling states of `docs/14` §4 (S2 hold, S3 fall mitigation, S4 torque off), not a direct ramp to zero. This is a required change to §2.
 3. **Safe stop (§6).** "Torque removed, brakes engaged" does not apply. A humanoid has no brakes. Its safe stop is the state chosen in `docs/14` §4, which is a proposal awaiting the project owner's decision (O4).
 4. **Compute allocation (§2).** Doc 02 places L1 current control on the MCU. Where the humanoid's joint servo runs (MCU or edge computer) is not decided. The timing requirement is in `docs/14` §2.1.
 
 ### 11.3 Not decided here
 
-- Whether the joint servo (L3) runs on the MCU or the edge computer.
+- Whether NMPC stays at L3 for the humanoid (open; the project owner has not answered).
+- Whether the joint servo runs on the MCU or the edge computer.
 - The data and logging formats for the humanoid (§7 is superseded for the MCU frame format).
 - Whether the RL mission policy (L5 in §1) remains a learned layer above the navigation layer. This is a scope question, not an architecture change, and is left to `docs/00`.
