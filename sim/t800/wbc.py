@@ -59,6 +59,7 @@ class WBC:
         self.failures = 0
         self.last_info = {}
         self.z_des = float(self.d.subtree_com[1][2])  # CoM height at start (set before stepping)
+        self.foot_rigid = True  # True: feet fixed in orientation (needs flat start); False: foot-flat task
 
     # ---- kinematics --------------------------------------------------------
     def _corner_points(self):
@@ -171,11 +172,18 @@ class WBC:
         foot_ang = {}
         for k in feet_in:
             Jf, jdf = self._foot_rigid(k)
-            Af = np.zeros((3, nq))
-            Af[:, :self.nv] = Jf[0:3]          # origin does not accelerate
-            rows_eq.append(Af)
-            rhs_eq.append(-jdf[0:3])
-            foot_ang[k] = (Jf[3:6], jdf[3:6])  # angular rows become a task (flat foot), not a constraint
+            if self.foot_rigid:
+                # rigid foot: origin and orientation do not accelerate (requires flat feet at start)
+                Af = np.zeros((6, nq))
+                Af[:, :self.nv] = Jf
+                rows_eq.append(Af)
+                rhs_eq.append(-jdf)
+            else:
+                Af = np.zeros((3, nq))
+                Af[:, :self.nv] = Jf[0:3]      # origin does not accelerate
+                rows_eq.append(Af)
+                rhs_eq.append(-jdf[0:3])
+                foot_ang[k] = (Jf[3:6], jdf[3:6])  # orientation is a soft task
         Aeq = np.vstack(rows_eq)
         beq = np.concatenate(rhs_eq)
 
@@ -218,7 +226,7 @@ class WBC:
         b = KP_COM * (np.asarray(com_des_xy) - com[0:2]) - KD_COM * comd[0:2] - jcom_dqd[0:2]
         tasks_A.append(A); tasks_b.append(b); tasks_w.append(np.full(2, W_COM))
         # Foot orientation: angular acceleration towards a flat foot (sole normal = world z)
-        for k in feet_in:
+        for k in ([] if self.foot_rigid else feet_in):
             Jr, jdr = foot_ang[k]
             R = d.xmat[self.body[k]].reshape(3, 3)
             zf = R[:, 2]

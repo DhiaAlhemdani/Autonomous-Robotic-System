@@ -137,7 +137,25 @@ Faults found and fixed while building it:
 - **Infeasible CoM demand.** With the feet fixed, the sideways CoM acceleration is limited by the zero-moment point to about g × 0.13 / 0.96 ≈ 1.3 m/s². A gain of 60 asked for about 5 m/s², and the QP correctly refused. Reduced gains did not stand.
 - **Start pose on the toes.** The keyframe has both feet pitched about 8°, so only the toe corners touch the floor. Making the feet fixed in their current orientation held them tilted. A foot-flat task was added, but at gains 5–80 the feet oscillate or diverge, and the robot still falls.
 
-Open: the foot-flat task needs its gains and weights designed against the foot and ankle dynamics, and the height and posture weights need the same treatment. The QP is not yet a standing controller. Stage A stays FAIL, and the WBC is not used in any evaluation or claim.
+Open: the foot-flat task needs its gains and weights designed against the foot and ankle dynamics, and the height and posture weights need the same treatment. The QP is not yet a standing controller.
+
+**Resolved in a later pass:** the foot-flat task was the wrong fix. Feet pitched 7° can be levelled by the setup instead: an offset of −0.168 rad on both ankle pitch joints, found by forward kinematics (`wbc_eval.py`, `ANKLE_LEVEL`). With the feet rigid and the start levelled, the QP stands on the tuning seeds 100–104 with no falls and final tilt below 0.5°.
+
+### Held-out evaluation of the QP (`wbc_eval.py`, Stage A criteria, seeds 0–4)
+
+These seeds were not used to tune the QP. The criteria are the ones in `stage_a_eval.py` (quiet standing 20 s; pushes 25, 50, 75, 100 N, four directions, 0.2 s, recovery judged 15 s after the push). Both controllers start from the same levelled pose. The centre-of-mass target is fixed at the start position.
+
+| Controller (level start) | Quiet standing | Pushes held (of 16 per seed) | Largest push held in every seed |
+| --- | --- | --- | --- |
+| Whole-body QP (`wbc.py`) | Held on 5/5, final tilt 0.1–0.5° | 14, 15, 15, 15, 14 | −x 100 N, ±y 100 N; +x 50 N |
+| Balance law (`balance.py`) | Seed 0 ends at 8.7°; seed 3 at 5.0° | 0, 16, 16, 11, 16 | 0 N on some seeds |
+
+**Verdict: Stage A FAIL under the declared criteria.** The QP falls on forward pushes of 75 N and 100 N in four of five seeds (seed 0 falls on 75 N and 100 N, seeds 1–4 on 100 N). All other pushes up to 100 N are held. The criteria require every push in every direction, so this does not pass.
+
+Caveats:
+- The setup changes (levelled start, fixed CoM target) are disclosed above and were applied to both controllers.
+- Seeds 0–4 have now been used for this evaluation. Any further tuning for the forward push must use other tuning seeds, and a new evaluation must use fresh held-out seeds.
+- Simulation only. Pushes are applied to the pelvis for 0.2 s. No claim is made about larger pushes, walking, or hardware transfer.
 
 Scope: simulation only. No claim of balance under larger pushes, walking, or hardware transfer.
 - Only 1 contact-free test per push direction; no noise, delay or model error. This is simulation only.
