@@ -46,6 +46,7 @@ KP_Z, KD_Z, W_Z = 60.0, 14.0, 10.0   # CoM height task (ASSUMPTION)
 KP_FOOT, KD_FOOT, W_FOOT = 80.0, 14.0, 8.0  # foot flat task (ASSUMPTION)
 Z_DES_OFFSET = None                 # set from the start pose by the caller
 W_REG = 1e-5
+FOOT_RIGID = 1.0            # 1.0: feet fixed in orientation (default); 0.0: soft foot-flat task (tuning switch, round 5)
 
 
 class WBC:
@@ -59,7 +60,7 @@ class WBC:
         self.failures = 0
         self.last_info = {}
         self.z_des = float(self.d.subtree_com[1][2])  # CoM height at start (set before stepping)
-        self.foot_rigid = True  # True: feet fixed in orientation (needs flat start); False: foot-flat task
+        self.foot_rigid = bool(FOOT_RIGID)  # True: feet fixed in orientation (needs flat start); False: foot-flat task
 
     # ---- kinematics --------------------------------------------------------
     def _corner_points(self):
