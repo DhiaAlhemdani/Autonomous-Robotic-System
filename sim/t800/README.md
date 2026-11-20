@@ -127,6 +127,18 @@ Stage A stays FAIL. The stepper is not used in any evaluation or claim.
 
 Stage A stays FAIL. The stance family (ankle CoM error plus hip pitch, PD per joint) does not give a robust standing law under these offsets, and no setting passes the tuning seeds. A stepper would sit on top of a stance law that is itself marginal.
 
+### Model-based whole-body QP (`wbc.py`, experimental, not in the Stage A evaluation)
+
+`wbc.py` solves, every 2 ms, a QP over joint accelerations and contact forces (four corners per sole, linearised friction, torque limits from the model). It uses tasks for CoM x/y and height, pelvis orientation, foot flatness and posture. The dynamics come from MuJoCo (M and bias), and the actuators are torque motors. Standing from the ±0.02 rad offsets on the tuning seeds 100–104 is **not achieved**: 4–5 of 5 seeds fall within 1–2 s.
+
+Faults found and fixed while building it:
+- **Rank-deficient contact rows.** Per-corner acceleration rows of one sole are rank 6 together. With finite-difference Jdot terms they were inconsistent and the QP returned no solution. Replaced by three linear rows per foot. The QP then solves at every step.
+- **Start pose inside the floor.** The reset pelvis height (0.87 m) puts the soles 0.15 m below the floor. The pelvis is now raised so the lowest corner is on the floor.
+- **Infeasible CoM demand.** With the feet fixed, the sideways CoM acceleration is limited by the zero-moment point to about g × 0.13 / 0.96 ≈ 1.3 m/s². A gain of 60 asked for about 5 m/s², and the QP correctly refused. Reduced gains did not stand.
+- **Start pose on the toes.** The keyframe has both feet pitched about 8°, so only the toe corners touch the floor. Making the feet fixed in their current orientation held them tilted. A foot-flat task was added, but at gains 5–80 the feet oscillate or diverge, and the robot still falls.
+
+Open: the foot-flat task needs its gains and weights designed against the foot and ankle dynamics, and the height and posture weights need the same treatment. The QP is not yet a standing controller. Stage A stays FAIL, and the WBC is not used in any evaluation or claim.
+
 Scope: simulation only. No claim of balance under larger pushes, walking, or hardware transfer.
 - Only 1 contact-free test per push direction; no noise, delay or model error. This is simulation only.
 
