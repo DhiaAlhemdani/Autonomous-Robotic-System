@@ -195,6 +195,10 @@ Still open: the declared Stage A criteria name seeds 0–4 as held-out. That que
 
 **Status after round 3:** the configuration passes its selection seeds (100–104) and one unused set (25–29), and fails seed 19, which is already used. The declared held-out seeds (0–4) are used, so the declared criteria still have no clean verdict. The held-out question is the owner's decision and is open.
 
+**Robustness check, `W_ORI=20`, CoM −0.07 m (unused seeds; run once each, no tuning; `robust_30_34_wori20.json`, `robust_35_39_wori20.json`, git-ignored).** Seeds 30–34: **FAIL**. Seed 31 falls during quiet standing at 1.3 s (tilt 25.8°, 0/16 pushes). Seed 34 holds 11/16 pushes (quiet tilt 1.24°); seeds 30, 32, 33 hold all 16. Seeds 35–39: **PASS**, all 80 pushes, quiet tilt 0.09–0.17°.
+
+**All unused seeds tested with this configuration:** 25–29 pass; 30–34 has two failures (31, 34); 35–39 pass; 19 fails. So 13 of 16 seeds pass in full and 3 fail (19, 31, 34). This is not a robust result. The configuration is not shown to stand on the seeds that matter. Stage A is **not passed** for this configuration. The round-3 pass on 25–29 is one set out of four.
+
 **Summary of the −0.08 m configuration on fresh seeds:** seeds 10–14 PASS, seeds 15–19 FAIL (seed 19). Seeds 0–4 were used for the start-target FAIL before the target was fixed, so they are not clean.
 
 **Verdict: Stage A not passed under the declared criteria.** The declared criteria name seeds 0–4 as the held-out set. Those seeds were used for the start-target FAIL before the −0.08 m target was chosen, so they cannot give a clean verdict on this configuration. Whether the seeds 10–14 run counts as the held-out verdict, or the criteria must be changed, is the project owner's decision and is not yet recorded. Until it is, Stage A is not claimed to pass.
