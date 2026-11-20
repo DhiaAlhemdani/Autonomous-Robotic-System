@@ -25,7 +25,9 @@ All notable changes to this design record. Format inspired by Keep a Changelog; 
 - The dashboard checks and browser step in `scripts/run_viewer.sh`.
 - `BalanceController.last_cmd` in `sim/t800/balance.py` (restored to the `[0.13.0]` version).
 
-**Kept:** the 3D viewer (closing its window ends the run); `--headless`; the planar base under NMPC (`sim/t800/planar_base.py`) and its results.
+**Changed:** closing the 3D viewer window no longer ends the run. The simulation keeps stepping headless and the window reopens automatically every 2 s until Ctrl+C or `--T`. Not tested with a real display in the build sandbox.
+
+**Kept:** the 3D viewer; `--headless`; the planar base under NMPC (`sim/t800/planar_base.py`) and its results.
 
 ## [0.13.0] — 2026-11-18 — Native MuJoCo viewer for the free-standing T800
 

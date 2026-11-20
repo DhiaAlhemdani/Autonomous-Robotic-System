@@ -10,7 +10,8 @@ Run on a laptop with a display (native, or the Linux container with X11, see doc
 
 Pushes are horizontal forces on the pelvis, held for --push-dur seconds (default 0.2 s).
 The window runs at real time. That is the simulation rate, not a measurement of the controller.
-Closing the window ends the run. Stop with Ctrl+C or --T.
+Closing the window does NOT stop the simulation: the run keeps going headless and the window
+reopens automatically (retried every 2 s) until you stop with Ctrl+C or --T.
 
 Simulation only. The controller is not a validated balance controller and does not handle
 pushes above about 150 N.
@@ -94,50 +95,60 @@ def main():
 
     import mujoco.viewer  # noqa: F401  (needs a display)
 
-    # Closing the 3D window ends the run. The window is not reopened.
-    cm = None
+    # Closing the 3D window does not end the run. The simulation keeps stepping,
+    # and the window is reopened automatically every REOPEN_S seconds.
+    REOPEN_S = 2.0
     viewer = None
+    cm = None
+    next_open = 0.0
 
-    def open_window():
-        nonlocal cm, viewer
-        print(f"3D window: opening on DISPLAY={os.environ.get('DISPLAY')}", flush=True)
-        cm = mujoco.viewer.launch_passive(r.m, r.d)
-        viewer = cm.__enter__()
-        print("3D window: open (closing it ends the run)", flush=True)
+    def try_open(now):
+        nonlocal viewer, cm, next_open
+        next_open = now + REOPEN_S
+        try:
+            cm = mujoco.viewer.launch_passive(r.m, r.d)
+            viewer = cm.__enter__()
+            print(f"3D window: open (t={t:.2f} s). Closing it does not stop the simulation.", flush=True)
+        except Exception as e:  # display gone or GLFW failure: keep simulating, retry later
+            viewer = cm = None
+            print(f"3D window: could not open ({e}); retrying in {REOPEN_S:.0f} s", flush=True)
 
-    def close_window():
-        nonlocal cm, viewer
+    def drop_window():
+        nonlocal viewer, cm
         if cm is not None:
             try:
                 cm.__exit__(None, None, None)
             except Exception:
                 pass
-        cm = viewer = None
+        viewer = cm = None
 
     wall0 = time.perf_counter()
     last_print = -1
     try:
-        open_window()
         while True:
             if args.T and t >= args.T:
                 break
-            if not viewer.is_running():
-                print("3D window closed; run ended.", flush=True)
-                break
+            now = time.perf_counter() - wall0
+            if viewer is not None and not viewer.is_running():
+                print("3D window closed; simulation continues, window will reopen.", flush=True)
+                drop_window()
+                next_open = now + REOPEN_S
+            if viewer is None and now >= next_open:
+                try_open(now)
             run_loop_step(t)
-            viewer.sync()
+            if viewer is not None:
+                viewer.sync()
             t += dt
             if int(t) != last_print:
                 last_print = int(t)
                 status(t)
-            ahead = t - (time.perf_counter() - wall0)
+            ahead = t - now
             if ahead > 0:
                 time.sleep(ahead)
     except KeyboardInterrupt:
         print("stopped (Ctrl+C)", flush=True)
     finally:
-        close_window()
-
+        drop_window()
 
 if __name__ == "__main__":
     main()
