@@ -47,6 +47,7 @@ KP_FOOT, KD_FOOT, W_FOOT = 80.0, 14.0, 8.0  # foot flat task (ASSUMPTION)
 Z_DES_OFFSET = None                 # set from the start pose by the caller
 W_REG = 1e-5
 FOOT_RIGID = 1.0            # 1.0: feet fixed in orientation (default); 0.0: soft foot-flat task (tuning switch, round 5)
+FOOT_STAB = 0.0              # 1.0: rigid feet become stabilised (angular acc = KP_FOOT*e_flat - KD_FOOT*omega), so a rotating foot is driven flat and damped; 0.0: zero acceleration (default). Round 6 switch.
 
 
 class WBC:
@@ -178,7 +179,15 @@ class WBC:
                 Af = np.zeros((6, nq))
                 Af[:, :self.nv] = Jf
                 rows_eq.append(Af)
-                rhs_eq.append(-jdf)
+                if FOOT_STAB:
+                    # stabilised: linear acc zero; angular acc drives the sole flat and damps its rotation
+                    Rk = d.xmat[self.body[k]].reshape(3, 3)
+                    e_flat = np.cross(Rk[:, 2], np.array([0.0, 0.0, 1.0]))
+                    om = Jf[3:6] @ d.qvel
+                    ang_des = KP_FOOT * e_flat - KD_FOOT * om
+                    rhs_eq.append(np.concatenate([-jdf[0:3], ang_des - jdf[3:6]]))
+                else:
+                    rhs_eq.append(-jdf)
             else:
                 Af = np.zeros((3, nq))
                 Af[:, :self.nv] = Jf[0:3]      # origin does not accelerate

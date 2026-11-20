@@ -269,3 +269,11 @@ Not tested in the build sandbox: the window path (no display there) and the X11 
 - (c) Soft foot-flat, W_FOOT=20: falls on seeds 110, 111, 112 and 114 (1.3–1.7 s); seed 113 holds 14/16.
 
 By the declared rule, **no configuration is selected**. The soft foot-flat task (b, c) makes the falls earlier and more frequent. It does not fix the rigid-foot problem; the rigid baseline is the better of the three. No held-out run on seeds 115–119 was made, and those seeds remain unused. The contact-model hypothesis from the seed-106 diagnosis is not confirmed by option (a); it is also not refuted for the rigid case, since the rigid baseline still falls on seed 110.
+
+**Diagnosis of the seed-106 fall, continued (no round declared).** Start poses are flat (sole corner spread at most about 0.03 m on all seeds 100–114), so the start pose is not the cause. During the first second, the right foot's rear sole corners rise steadily from 0 to about 0.23 m while its front corners stay on the floor. The foot's world angular velocity about the pitch axis stays at about 0.65–1.1 rad/s from 0.3 to 0.5 s. The rigid-foot constraint sets angular acceleration to zero, so it holds a rotating foot at its current rate rather than removing the rotation. This is the mechanism behind the seed-106 fall.
+
+**Test of a stabilised rigid foot (`wbc.py` switch `FOOT_STAB`, default 0.0 = unchanged).** With `FOOT_STAB=1`, the foot-orientation equality becomes angular acceleration = KP_FOOT·e_flat − KD_FOOT·ω, so the sole is driven flat and its rotation damped. Diagnostic on seed 106 (a tuning seed), W_ORI=20, −0.07 m:
+- default gains (KP_FOOT 80, KD_FOOT 14): falls at 1.5 s, tilt 25.2°;
+- KP_FOOT 200, KD_FOOT 30: falls at 1.3 s, tilt 6.9°;
+- KP_FOOT 400, KD_FOOT 60: falls at 0.4 s, with QP failures.
+Stiffer gains do not fix it, so stabilising the foot does not remove the failure at the gains tested. No round was declared on this variant; it is not a candidate for Stage A.
