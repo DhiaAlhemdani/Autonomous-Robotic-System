@@ -118,6 +118,15 @@ Why it fails, from the trace: the robot starts 0.02 m from the toe edge of the s
 
 Stage A stays FAIL. The stepper is not used in any evaluation or claim.
 
+### Follow-up diagnosis (still no pass)
+
+- **A forced in-place swing falls even with no step.** With the trigger disabled, a zero-displacement swing of the left foot (1.0–1.4 s) falls on all 5 tuning seeds at 2.2–3.5 s. The pelvis does not drop. Pitch grows during double support afterwards. So the stance law, not the swing, is marginal.
+- **The ankle saturates.** The ankle command is kc × CoM error × kp 600. At 0.1 m error that is about 0.36 rad of target, which hits the 160 N·m limit within 0.6 s, and the centre of mass moves about 0.2 m forward before it recovers.
+- **Ankle gain sweep, tuning seeds 100–104, quiet standing 20 s.** Ankle kp 600, 300, 150, 75: all settings with kp below 600 fall on all 5 seeds. kp 1200 with kc 3, kd 20: 0 falls, final tilt 3.4–7.0°. kp 2400: 0–2 falls.
+- **Best tuning-set setting:** kp_ankle 1200, kc 3, kv 0.5, kh 3, kd 20. No falls on the tuning seeds, but seed 104 ends at 6.0°, above the 5° criterion. This setting has not been run on the held-out evaluation seeds, and was not promoted.
+
+Stage A stays FAIL. The stance family (ankle CoM error plus hip pitch, PD per joint) does not give a robust standing law under these offsets, and no setting passes the tuning seeds. A stepper would sit on top of a stance law that is itself marginal.
+
 Scope: simulation only. No claim of balance under larger pushes, walking, or hardware transfer.
 - Only 1 contact-free test per push direction; no noise, delay or model error. This is simulation only.
 
