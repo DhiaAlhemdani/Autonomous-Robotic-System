@@ -152,6 +152,33 @@ These seeds were not used to tune the QP. The criteria are the ones in `stage_a_
 
 **Verdict: Stage A FAIL under the declared criteria.** The QP falls on forward pushes of 75 N and 100 N in four of five seeds (seed 0 falls on 75 N and 100 N, seeds 1–4 on 100 N). All other pushes up to 100 N are held. The criteria require every push in every direction, so this does not pass.
 
+### Stage A with the final QP configuration (`wbc_eval.py --com-target -0.08`)
+
+The forward-push failure came from the centre-of-mass target. The start position sits 0.02 m from the toe edge, so a forward push leaves the support. Targets were tried on tuning seeds 100–104 only, with the full criteria:
+
+| CoM target x (m, world) | Tuning seeds 100–104 |
+| --- | --- |
+| start (about −0.02) | forward pushes fail on 3 seeds (earlier verdict) |
+| −0.06 | 1 push fails (+x 100 N, seed 101) |
+| −0.08 | all 80 pushes and quiet standing pass |
+| −0.11 (sole centre) | backward 100 N fails on 2 seeds |
+
+Final check, with the target fixed at −0.08 m:
+
+| Seeds | Role | Quiet standing (final tilt) | Pushes held | Result |
+| --- | --- | --- | --- | --- |
+| 5–9 | fresh, never used | held, 0.3–0.6° | 16/16 on every seed | **PASS** |
+| 0–4 | used for the earlier FAIL, not for tuning | held, 0.4–0.6° | 16/16 on every seed | PASS |
+
+**Verdict: Stage A PASS under the declared criteria** for the levelled-start, QP configuration with the CoM target at −0.08 m. The fresh-seed result (5–9) is the clean one. The seeds 0–4 result is not independent of the choice of −0.08 m, which was made after those seeds had failed with the start target.
+
+What this supports, and what it does not:
+- Supports: standing in simulation from ±0.02 rad joint offsets, with pelvis pushes of 25–100 N, 0.2 s, in four directions, recovered within 15 s.
+- Does not support: pushes above 100 N, walking, whole-body control beyond this QP, balance on the original (non-levelled) start, or any hardware transfer. The balance law from the same levelled start still FAILS (above).
+- The levelled start and the −0.08 m target are setup and design choices, applied to the Stage A criteria, which are unchanged.
+
+Commands: `.venv/bin/python sim/t800/wbc_eval.py --controller wbc --seeds 5 6 7 8 9 --pushes all --com-target -0.08` (results to `runs/stage_a/`, git-ignored).
+
 Caveats:
 - The setup changes (levelled start, fixed CoM target) are disclosed above and were applied to both controllers.
 - Seeds 0–4 have now been used for this evaluation. Any further tuning for the forward push must use other tuning seeds, and a new evaluation must use fresh held-out seeds.
