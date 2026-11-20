@@ -94,6 +94,14 @@ Result: **FAIL** (`python sim/t800/stage_a_eval.py`; output in `runs/stage_a/eva
 
 Diagnosis, not a fix. Seeds 0 and 4 start with the whole-body centre of mass about 0.12 m ahead of the feet, produced by the joint offsets. In seed 0 the ankle pitch command sits at its 160 N·m limit for about 630 control steps in the first 3 s, against about 50 for seed 1. The ankle authority looks exhausted, but the controller was not changed and this is not proven. Seeds 2 and 3 pass with little margin, reaching 5.5° during standing. Changing the controller needs a decision first (e.g. a stepping strategy, a different ankle/hip split, or a narrower initial-offset scope).
 
+Follow-up sweeps on tuning seeds 100–104 (separate from evaluation seeds 0–4; quiet standing only, same ±0.02 rad offsets). None passes:
+- Adding a centre-of-mass term to the hip pitch (either sign, gains 2–10): every seed falls.
+- Ankle gain kc 0.5–3 with hip gain kh 2: 2–3 of 5 seeds fall, and the rest end at 3–20° tilt. The fall angle stays near 19–20° for all kc, so ankle authority is not the binding limit. The earlier saturation reading was not confirmed as the cause.
+- kh 4–6: no fall, but a steady lean of 8–14°, which fails the criterion.
+- Integral gain ki 0.3 and 1.0 on the ankle: no improvement.
+
+Conclusion: the ankle-CoM plus hip-pitch law cannot meet the criterion on these offsets. Stepping (or a different balance formulation) is needed. The controller was not changed in the repository.
+
 Scope: simulation only. No claim of balance under larger pushes, walking, or hardware transfer.
 - Only 1 contact-free test per push direction; no noise, delay or model error. This is simulation only.
 
