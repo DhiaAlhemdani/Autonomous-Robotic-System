@@ -102,6 +102,22 @@ Follow-up sweeps on tuning seeds 100–104 (separate from evaluation seeds 0–4
 
 Conclusion: the ankle-CoM plus hip-pitch law cannot meet the criterion on these offsets. Stepping (or a different balance formulation) is needed. The controller was not changed in the repository.
 
+### Stepping attempt (`stepper.py`, experimental, not in the Stage A evaluation)
+
+`stepper.py` adds a capture-point step to the balance law: xi = c + cdot/omega, checked against the sole outline. A step puts the swing foot on xi, with a damped least-squares IK swing and a stance leg on the balance law. The IK converges (residual 0 mm for a 5 cm / 2 cm target).
+
+Result: **does not work yet.** Sweep on tuning seeds 100–104, quiet standing, 15 s:
+
+| Trigger margin (m) | Max step (m) | Step time (s) | Falls (of 5) |
+| --- | --- | --- | --- |
+| +0.02 | 0.12 / 0.25 | 0.25 / 0.40 | 5 |
+| −0.03 | 0.12 / 0.25 | 0.25 / 0.40 | 3 |
+| −0.08 | any | any | 0 (no step ever taken; final tilts 3.1–6.7°, this is the balance law alone) |
+
+Why it fails, from the trace: the robot starts 0.02 m from the toe edge of the sole, and already drifts forward at about 0.15 m/s from the joint offsets. The step unloads one foot while the lean is still growing, and the 0.25–0.4 s swing is slower than the fall, which comes at about 0.45 s. The balance law has no single-support mode: its reference is the midpoint of the two feet. A usable stepper needs a single-support stance law and a faster capture trigger. Those are not built.
+
+Stage A stays FAIL. The stepper is not used in any evaluation or claim.
+
 Scope: simulation only. No claim of balance under larger pushes, walking, or hardware transfer.
 - Only 1 contact-free test per push direction; no noise, delay or model error. This is simulation only.
 
