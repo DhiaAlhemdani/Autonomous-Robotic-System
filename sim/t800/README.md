@@ -170,22 +170,24 @@ Final check, with the target fixed at −0.08 m:
 | 5–9 | fresh, never used | held, 0.3–0.6° | 16/16 on every seed | **PASS** |
 | 0–4 | used for the earlier FAIL, not for tuning | held, 0.4–0.6° | 16/16 on every seed | PASS |
 
-Fresh held-out seeds 10–14 (never used for tuning or earlier evaluation; run once with the target fixed at −0.08 m, no further tuning; `runs/stage_a/wbc_heldout_10_14_m008.json`, git-ignored): quiet standing held on all five seeds (tilt 0.34–0.67°); 16/16 pushes held on every seed, 25–100 N in ±x and ±y; **PASS**.
+Seeds 10–14 (never used for tuning or earlier evaluation; run once with the target fixed at −0.08 m, no further tuning; `runs/stage_a/wbc_heldout_10_14_m008.json`, git-ignored): quiet standing held on all five seeds (tilt 0.34–0.67°); 16/16 pushes held on every seed, 25–100 N in ±x and ±y. These seeds are **not** the held-out seeds named in `stage_a_eval.py` (0–4), so this result is a separate check, not the declared verdict.
 
 Re-run of seeds 0–4 at the same settings (`runs/stage_a/wbc_heldout_m008.json`, git-ignored): all five seeds held quiet standing (tilt 0.40–0.59°) and 16/16 pushes; **PASS** again. Seeds 0–4 were run before the target was fixed (start-target FAIL), so this is a reproduction on a previously seen seed set, not a fresh held-out test.
 
-**Verdict: Stage A PASS under the declared criteria** for the levelled-start, QP configuration with the CoM target at −0.08 m. The fresh-seed result (5–9) is the clean one. The seeds 0–4 result is not independent of the choice of −0.08 m, which was made after those seeds had failed with the start target.
+**Verdict: pending.** The declared criteria name seeds 0–4 as the held-out set. Those seeds were used for the start-target FAIL before the −0.08 m target was chosen, so they cannot give a clean verdict on this configuration. Whether the seeds 10–14 run counts as the held-out verdict, or the criteria must be changed, is the project owner's decision and is not yet recorded. Until it is, Stage A is not claimed to pass.
+
+A result for seeds 5–9 is recorded in commit `f0cf235`. It was not re-run for this README and is not relied on here.
 
 What this supports, and what it does not:
-- Supports: standing in simulation from ±0.02 rad joint offsets, with pelvis pushes of 25–100 N, 0.2 s, in four directions, recovered within 15 s.
+- Supports (simulation only): on the seeds run above, standing from ±0.02 rad joint offsets with pelvis pushes of 25–100 N, 0.2 s, in four directions, with no falls. Recovery time was not measured.
 - Does not support: pushes above 100 N, walking, whole-body control beyond this QP, balance on the original (non-levelled) start, or any hardware transfer. The balance law from the same levelled start still FAILS (above).
-- The levelled start and the −0.08 m target are setup and design choices, applied to the Stage A criteria, which are unchanged.
+- The levelled start and the −0.08 m target are setup and design choices. The Stage A criteria themselves are unchanged.
 
 Commands: `.venv/bin/python sim/t800/wbc_eval.py --controller wbc --seeds 5 6 7 8 9 --pushes all --com-target -0.08` (results to `runs/stage_a/`, git-ignored).
 
 Caveats:
 - The setup changes (levelled start, fixed CoM target) are disclosed above and were applied to both controllers.
-- Seeds 0–4 have now been used for this evaluation. Any further tuning for the forward push must use other tuning seeds, and a new evaluation must use fresh held-out seeds.
+- Seeds 0–4 have now been used for this evaluation, so they cannot be used again as a clean held-out set. Any further tuning must use other tuning seeds.
 - Simulation only. Pushes are applied to the pelvis for 0.2 s. No claim is made about larger pushes, walking, or hardware transfer.
 
 Scope: simulation only. No claim of balance under larger pushes, walking, or hardware transfer.
