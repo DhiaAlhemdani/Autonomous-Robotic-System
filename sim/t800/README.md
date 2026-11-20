@@ -185,6 +185,10 @@ Still open: the declared Stage A criteria name seeds 0–4 as held-out. That que
 
 **Tuning round 3 (declared before the runs; seeds 100–104 only; `sim/t800/wbc_sweep.py` overrides wbc.py constants for one run).** Motive: seed 19 falls under both targets. Its failure looks like the orientation of one foot, so the grid targets orientation and posture weights, with the CoM target at −0.07 m. Grid: (a) baseline re-run (−0.07 m, current constants); (b) `W_ORI=20` (orientation weight 5 → 20); (c) `KP_ORI=120, KD_ORI=20` (stiffer orientation). Selection rule (same as round 2): keep configurations that hold all 16 pushes on every tuning seed with no falls and quiet standing ok; among those, lowest maximum quiet tilt. Then one run of the selected configuration on unused seeds 25–29, with no further tuning. Seeds 15–19 and 20–24 are not used for selection.
 
+**Tuning round 3 results (seeds 100–104, all 16 pushes; `r3_base_m007.json`, `r3_wori20.json`, `r3_kpori120.json`; git-ignored).** All three hold 80/80 pushes with no falls. Largest final quiet tilt: baseline 0.53°; `W_ORI=20` **0.21°**; `KP_ORI=120, KD_ORI=20` 0.41°. By the rule, the selected configuration is **`W_ORI=20` with the CoM target at −0.07 m**. The default in `wbc.py` is **not** changed here; the run below sets it explicitly with `wbc_sweep.py --set W_ORI=20`.
+
+**Next (declared): one run of the selected configuration on unused seeds 25–29, no further tuning.** Seeds 15–19 and 20–24 are not part of the selection.
+
 **Summary of the −0.08 m configuration on fresh seeds:** seeds 10–14 PASS, seeds 15–19 FAIL (seed 19). Seeds 0–4 were used for the start-target FAIL before the target was fixed, so they are not clean.
 
 **Verdict: Stage A not passed under the declared criteria.** The declared criteria name seeds 0–4 as the held-out set. Those seeds were used for the start-target FAIL before the −0.08 m target was chosen, so they cannot give a clean verdict on this configuration. Whether the seeds 10–14 run counts as the held-out verdict, or the criteria must be changed, is the project owner's decision and is not yet recorded. Until it is, Stage A is not claimed to pass.
