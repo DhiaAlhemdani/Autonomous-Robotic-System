@@ -46,6 +46,8 @@ KP_Z, KD_Z, W_Z = 60.0, 14.0, 10.0   # CoM height task (ASSUMPTION)
 KP_FOOT, KD_FOOT, W_FOOT = 80.0, 14.0, 8.0  # foot flat task (ASSUMPTION)
 Z_DES_OFFSET = None                 # set from the start pose by the caller
 W_REG = 1e-5
+NORMAL_INEQ = 0.0            # 1.0: unilateral contact model (per-corner normal acc >= -KP_N*z - KD_N*vz); use with FOOT_RIGID=0 (round 6 redesign)
+KP_N, KD_N = 200.0, 30.0      # non-penetration gains for NORMAL_INEQ (ASSUMPTION, tuning)
 FOOT_RIGID = 1.0            # 1.0: feet fixed in orientation (default); 0.0: soft foot-flat task (tuning switch, round 5)
 FOOT_STAB = 0.0              # 1.0: rigid feet become stabilised (angular acc = KP_FOOT*e_flat - KD_FOOT*omega), so a rotating foot is driven flat and damped; 0.0: zero acceleration (default). Round 6 switch.
 
