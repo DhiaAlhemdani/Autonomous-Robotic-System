@@ -176,6 +176,8 @@ Re-run of seeds 0–4 at the same settings (`runs/stage_a/wbc_heldout_m008.json`
 
 **Fresh set 15–19 (run once, −0.08 m, no tuning; `runs/stage_a/wbc_heldout_15_19_m008.json`, git-ignored): FAIL.** Seeds 15–18 hold quiet standing and all 16 pushes (final quiet tilt 0.43–0.57°). Seed 19 does not: its quiet tilt peaks at 4.2° and ends at 3.9° with only two left-foot contacts. It falls forward under the +x 75 N push (at 7.1 s) and the +x 100 N push (at 6.6 s). It holds the other 12 pushes. Stage A fails on this set.
 
+**Tuning round 2 (seeds 100–104 only; all 16 pushes; `wbc_tune_m007.json`, `wbc_tune_m009.json`, git-ignored).** Rule fixed before the runs: keep configurations that hold all 80 pushes with no falls on 100–104; among those, pick the lowest maximum quiet tilt. Results: −0.07 m holds 80/80 (max quiet tilt 0.52°); −0.09 m holds 80/80 (max quiet tilt 0.67°). The rule selects **−0.07 m**. Next: one run of −0.07 m on unused seeds 20–24, with no further tuning. That run is the verdict on this round.
+
 **Summary of the −0.08 m configuration on fresh seeds:** seeds 10–14 PASS, seeds 15–19 FAIL (seed 19). Seeds 0–4 were used for the start-target FAIL before the target was fixed, so they are not clean.
 
 **Verdict: Stage A not passed under the declared criteria.** The declared criteria name seeds 0–4 as the held-out set. Those seeds were used for the start-target FAIL before the −0.08 m target was chosen, so they cannot give a clean verdict on this configuration. Whether the seeds 10–14 run counts as the held-out verdict, or the criteria must be changed, is the project owner's decision and is not yet recorded. Until it is, Stage A is not claimed to pass.
