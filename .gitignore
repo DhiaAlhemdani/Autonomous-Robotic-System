@@ -4,7 +4,10 @@
 # Run outputs, data and weights (doc 03 §4): kept out of git
 runs/
 data/
-models/
+models/*
+# Model weights stay out of git (SR-07); small config files and records are tracked
+models/**/*.safetensors
+!models/grounding-dino-base/
 artifacts/
 
 # ROS 2 build products
