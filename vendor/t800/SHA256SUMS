@@ -1,4 +1,5 @@
 a3e5f08bf7ae0983cc7a9f602e9a555f5956a8dade26cf4cf9cc95c441fe0b6c  ./LICENSE.txt
+28acddae40f3ff66848d37b0295884ce28937b3ebd7f9ae3ee18c404f3764899  ./NOTICE.md
 a59ae34a9367c01b8249b55f50d9330c142c55256992813cb902dd66357e927b  ./assets/config/t800/base_state_estimator/default.yaml
 7006a9890f1abd8941f0933842ae9f5b5bede4f9ed813e57d46fd75d901b796a  ./assets/config/t800/global_options/default.yaml
 2dab5162fef81ed40d27e5379e7c972f81f3a4a98172894c8598a2d714b7ec03  ./assets/config/t800/global_options/release.yaml
