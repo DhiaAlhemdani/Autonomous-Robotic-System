@@ -170,6 +170,8 @@ Final check, with the target fixed at −0.08 m:
 | 5–9 | fresh, never used | held, 0.3–0.6° | 16/16 on every seed | **PASS** |
 | 0–4 | used for the earlier FAIL, not for tuning | held, 0.4–0.6° | 16/16 on every seed | PASS |
 
+Fresh held-out seeds 10–14 (never used for tuning or earlier evaluation; run once with the target fixed at −0.08 m, no further tuning; `runs/stage_a/wbc_heldout_10_14_m008.json`, git-ignored): quiet standing held on all five seeds (tilt 0.34–0.67°); 16/16 pushes held on every seed, 25–100 N in ±x and ±y; **PASS**.
+
 Re-run of seeds 0–4 at the same settings (`runs/stage_a/wbc_heldout_m008.json`, git-ignored): all five seeds held quiet standing (tilt 0.40–0.59°) and 16/16 pushes; **PASS** again. Seeds 0–4 were run before the target was fixed (start-target FAIL), so this is a reproduction on a previously seen seed set, not a fresh held-out test.
 
 **Verdict: Stage A PASS under the declared criteria** for the levelled-start, QP configuration with the CoM target at −0.08 m. The fresh-seed result (5–9) is the clean one. The seeds 0–4 result is not independent of the choice of −0.08 m, which was made after those seeds had failed with the start target.
