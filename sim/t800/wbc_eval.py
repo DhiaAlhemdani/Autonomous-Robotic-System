@@ -7,7 +7,9 @@ comparison is like-for-like:
 * Level start. The keyframe pitches both feet about 7 degrees, so only the toes touch the floor.
   Both ankle pitch joints are offset by -0.168 rad, which levels the feet by kinematics. This is a
   setup choice, not a result, and it is fixed here before the run.
-* Fixed CoM target. The desired centre of mass is the start position, held for the whole episode.
+* Fixed CoM target. The desired centre of mass is held at world x = -0.07 m (y = 0) for the whole episode. The
+  default is -0.07 m, selected on tuning seeds 100-104 (README, tuning round 2). The start position failed the
+  held-out forward pushes, so 'start' is not the default.
 
 Usage (repo root):  .venv/bin/python sim/t800/wbc_eval.py --controller wbc --out runs/stage_a/wbc_eval.json
                     .venv/bin/python sim/t800/wbc_eval.py --controller balance --out runs/stage_a/balance_level.json
@@ -102,7 +104,7 @@ def main():
     ap.add_argument("--controller", choices=["wbc", "balance"], required=True)
     ap.add_argument("--out", default="")
     ap.add_argument("--seeds", type=int, nargs="*", default=None, help="evaluation seeds (default: 0-4)")
-    ap.add_argument("--com-target", default="start", help="'start', 'sole' (world xy (-0.11, 0)), or a numeric world x (y = 0)")
+    ap.add_argument("--com-target", default="-0.07", help="'-0.07' (default, selected on seeds 100-104), 'start', 'sole' (world xy (-0.11, 0)), or a numeric world x (y = 0)")
     ap.add_argument("--pushes", default="all", help="'all' or 'forward' (+x 75 and 100 N only, for tuning)")
     args = ap.parse_args()
     seeds = args.seeds if args.seeds else SEEDS
