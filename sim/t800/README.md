@@ -252,3 +252,5 @@ The script allows local X connections (`xhost +local:`) and starts the `viewer` 
 Simulation only. Stage A is a free-standing balance test, not walking, and no claim is made about pushes beyond the table above or about hardware.
 
 Not tested in the build sandbox: the window path (no display there) and the X11 mount on a real laptop. The headless path was tested.
+
+**Tuning round 4 (declared before any run; tuning seeds 105–109 only, never used before).** Base: `W_ORI=20`, CoM target −0.07 m (the round-3 choice). Motive: the round-3 configuration failed seeds 19, 31 and 34; its remaining weak spots are the foot-flat and posture tasks, which the round did not vary. Grid: (a) base; (b) `W_FOOT=20`; (c) `W_POST=5`; (d) `W_FOOT=20, W_POST=5`. Selection rule (same as rounds 2–3): keep configurations that hold all 16 pushes on every tuning seed with no falls and quiet standing ok; among those, lowest maximum final quiet tilt. Then one run of the selected configuration on unused seeds 40–44, no further tuning. Seeds 0–4, 10–24, 15–19, 25–39 are not used for selection. Seeds 30–34 failed; they are not re-tuned against.
