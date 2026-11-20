@@ -290,3 +290,11 @@ Stiffer gains do not fix it, so stabilising the foot does not remove the failure
 So the unilateral model with a lower posture weight is the first variant in this work to hold quiet standing on every tuning seed with no falls. It still misses one push direction at 100 N, and the declared rule requires all 16 pushes. **No configuration is selected, and no held-out run on seeds 125–129 was made; those seeds remain unused.** The 100 N −x miss is a real limit and is not a rounding issue: it is the same push direction on every seed.
 
 **Tuning round 7 (declared before any run; tuning seeds 125–129 only, never used; target: the −x 100 N push that failed in round 6).** Base: the unilateral model (`FOOT_RIGID=0`, `NORMAL_INEQ=1`), `W_FOOT=50`, `W_POST=0.2`, `W_ORI=20`, CoM −0.07 m (round-6 arm (a)). Grid, one lever each: (a) base; (b) `W_POST=0.05` (posture yields more to balance); (c) `W_ORI=40` (pelvis held upright harder); (d) `W_COM=30` (CoM position task stiffer). Selection rule (same as rounds 2–6): keep configurations that hold all 16 pushes on every tuning seed with no falls and quiet standing ok; among those, lowest maximum final quiet tilt. Then one run of the selected configuration on unused held-out seeds 130–134, with no further tuning. The held-out seeds for this round are 130–134 (the earlier 125–129 plan is withdrawn). Seeds 100–124 are not used for selection.
+
+**Tuning round 7 results (seeds 125–129; `r7_a.json`–`r7_d.json`, git-ignored).**
+- (a) base (W_POST=0.2): fails the −x 100 N push on all five seeds (15/16 each; −x min 75 N).
+- (b) **W_POST=0.05: 16/16 on every seed, no falls; quiet tilt 0.00–0.02°.**
+- (c) W_ORI=40: 15/16 on all seeds; the −x 100 N push still fails.
+- (d) W_COM=30: 16/16 on four seeds; seed 126 fails one push (−x min 75 N).
+
+By the rule, **W_POST=0.05 (other settings as the base) is selected.** Next (declared): one run on unused held-out seeds 130–134, with no further tuning. That run is the verdict for this round.
