@@ -174,7 +174,7 @@ Seeds 10–14 (never used for tuning or earlier evaluation; run once with the ta
 
 Re-run of seeds 0–4 at the same settings (`runs/stage_a/wbc_heldout_m008.json`, git-ignored): all five seeds held quiet standing (tilt 0.40–0.59°) and 16/16 pushes; **PASS** again. Seeds 0–4 were run before the target was fixed (start-target FAIL), so this is a reproduction on a previously seen seed set, not a fresh held-out test.
 
-**Fresh set 15–19 (run once, −0.08 m, no tuning; `runs/stage_a/wbc_heldout_15_19_m008.json`, git-ignored): FAIL.** Seeds 15–18 hold quiet standing and all 16 pushes (quiet tilt 0.43–0.57°, except seed 17 at 0.54° and seed 18 at 0.57° final). Seed 19 does not: its quiet tilt peaks at 4.2° and ends at 3.9° with only two left-foot contacts. It falls forward under the +x 75 N push (at 7.1 s) and the +x 100 N push (at 6.6 s). It holds the other 12 pushes. Stage A fails on this set.
+**Fresh set 15–19 (run once, −0.08 m, no tuning; `runs/stage_a/wbc_heldout_15_19_m008.json`, git-ignored): FAIL.** Seeds 15–18 hold quiet standing and all 16 pushes (final quiet tilt 0.43–0.57°). Seed 19 does not: its quiet tilt peaks at 4.2° and ends at 3.9° with only two left-foot contacts. It falls forward under the +x 75 N push (at 7.1 s) and the +x 100 N push (at 6.6 s). It holds the other 12 pushes. Stage A fails on this set.
 
 **Summary of the −0.08 m configuration on fresh seeds:** seeds 10–14 PASS, seeds 15–19 FAIL (seed 19). Seeds 0–4 were used for the start-target FAIL before the target was fixed, so they are not clean.
 
