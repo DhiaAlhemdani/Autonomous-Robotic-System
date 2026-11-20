@@ -132,7 +132,7 @@ Names and units are proposed. Ranges marked **TBD** must be measured in simulati
 
 ## 4. Safe state for a fall (proposal, decision open)
 
-**Status:** proposal. The safe-state choice is the project owner's decision (O4). Every number in this section is an **ASSUMPTION** until tested in simulation. Nothing here is a validated safety property.
+**Status:** owner decision recorded for the S2/S3/S4 split and the invalid-estimator case (§4.7, owner answers). The evaluation in §4.5 is approved but not yet run. The safe-state choice remains the project owner's decision (O4), which the owner has now answered for this proposal. Every number in this section is an **ASSUMPTION** until tested in simulation. Nothing here is a validated safety property.
 
 ### 4.1 Why the existing rule does not transfer
 
@@ -152,7 +152,7 @@ Key constraints:
 
 - **Torque removal is never the first response to a robot that is upright.** Torque is removed only in S4, and only after S3 has run or an impact has already happened.
 - **S2 is not a stop from walking.** A walk is stopped by ramping the command to zero (L3) and letting L1 settle into `pd_stand`. A stop that cuts the gait abruptly is treated as a trigger for S3.
-- **S3 must know its fall direction.** Direction comes from the estimator's tilt and angular velocity. If the estimator is invalid, the robot goes straight to S4 under this rule, and this is a known weak case (see §4.6).
+- **S3 must know its fall direction.** Direction comes from the estimator's tilt and angular velocity. If the estimator is invalid, the owner's decision is to hold stance (S2) rather than go straight to S4. Holding needs a tilt signal to know when to escalate, so this case still depends on the estimator and is a known weak case (see §4.6).
 
 ### 4.3 Triggers and thresholds
 
@@ -177,7 +177,7 @@ The thresholds are placeholders to be **measured** in simulation (§4.5). They a
 2. **Fall mitigation, then torque off (the proposal above).** Lowers impact energy and avoids damage to joints. Needs a posture that is designed and tested. The posture is **not yet designed**.
 3. **Torque off immediately.** Simple and does not depend on the estimator. The robot falls uncontrolled and the impact is largest.
 
-**Recommendation (proposal):** use option 1 for S1 and S2, and option 2 for falls. Option 3 is used only in S4, after impact or posture timeout. This is not a recommendation for hardware. It is a simulation design to be tested.
+**Recommendation (proposal, adopted by the owner):** use option 1 for S1 and S2, and option 2 for falls. Option 3 is used only in S4, after impact or posture timeout. This is not a recommendation for hardware. It is a simulation design to be tested.
 
 ### 4.5 Evaluation in simulation (adds E7–E9 to §5)
 
@@ -192,15 +192,15 @@ Fixed seeds, the commit, and the MuJoCo version are recorded, as in §5. The sim
 ### 4.6 Known gaps
 
 - **No posture is designed yet.** S3 is a state with no tested motion behind it.
-- **Estimator failure.** If the estimator is invalid during a fall, direction is unknown and S3 cannot choose a posture. The fallback is S4, with the impact it causes.
+- **Estimator failure.** If the estimator is invalid during a fall, direction is unknown and S3 cannot choose a posture. The owner's decision is to hold stance in that case. Not yet tested: whether holding stance without a valid tilt signal can be bounded in simulation, and what happens if the robot falls while the estimate is invalid.
 - **Stand-up is out of scope.** The upstream `stand_up` plan exists in `mode.yaml` but is not evaluated here. Recovery from S4 needs a separate design.
 - **Sim-to-real.** None of the thresholds, posture or impact figures transfer to hardware without evidence (O8).
 
-### 4.7 Decisions needed from the project owner
+### 4.7 Decisions (project owner)
 
-1. Confirm the S2/S3/S4 split above, or choose option 1 or 3 only.
-2. Decide whether a robot with an invalid estimator should fall through to S4 or hold.
-3. Approve E7–E9 as the evaluation before any interface is frozen.
+1. **Decided:** the S2/S3/S4 split above, as written (option 1 for S1/S2, option 2 for falls, option 3 only in S4).
+2. **Decided:** with an invalid estimator, hold stance rather than fall through to S4 (see §4.2 and §4.6).
+3. **Decided:** E7–E9 are approved as the simulation evaluation before any interface is frozen. They have not been run.
 
 ---
 
@@ -227,7 +227,7 @@ The Stage A standing controller (`sim/t800/balance.py`) is a separate experiment
 
 | # | Item | Why it matters | Owner |
 | --- | --- | --- | --- |
-| O1 | **Licence and provenance** of the walking policy weights and of the EngineAI SDK | Adoption as a baseline (`docs/11` §7) is conditional on it. Not checked. | project owner |
+| O1 | **Licence and provenance** of the walking policy weights and of the EngineAI SDK | Adoption as a baseline (`docs/11` §7) is conditional on it. **Partly checked.** The upstream T800 repo and the EngineAI SDK repo are both BSD-3-Clause (SPDX from the GitHub API). The walking policy `assets/config/t800/rl_walking_example/policy/t800_260618_165257_30000.mnn` and the grounding model have no separate licence file in the repo. The upstream README says models keep their own terms and points to an external EngineAI document, which does not state terms for the `.mnn` files. **Owner direction:** migrate the required resources from the T800 repo into this repo. **Conflicts to resolve:** SR-07 (no model weights in git; external storage with checksums), and the weights' terms are not confirmed. | project owner |
 | O2 | Torque unit in `serial_actuators.xml` (N·m assumed) | Limits and gains depend on it | verify upstream |
 | O3 | Joint-label offset in `motion_state_estimator/default.yaml` | Wrong joint mapping would corrupt the estimate | fix or document before use |
 | O4 | Safe state for a humanoid (§4): S2/S3/S4 split proposed, decision open | Doc 02 §6 assumes torque removal is safe; it is not for a humanoid | project owner |
@@ -244,4 +244,5 @@ The Stage A standing controller (`sim/t800/balance.py`) is a separate experiment
 
 - **Basis:** `docs/11` §2.1 and §2.2 (superseded wheeled items), §5 (open decisions), §7 (T800 decision). Revision of `docs/02` §§1–8 remains the platform revision of `docs/02` §10.
 - **Added:** this document. No existing interface is changed. No frozen interface exists yet for the humanoid.
-- **Next:** resolve O1–O4 with the project owner, then run the §5 evaluation before any interface is frozen.
+- **Owner decisions (this revision):** §4.7 items 1–3 decided as written (see §4.7); O1 direction recorded in §6 with two conflicts open. No code or weights were copied.
+- **Next:** resolve the O1 conflicts, then run the §5 and §4.5 evaluations before any interface is frozen.
