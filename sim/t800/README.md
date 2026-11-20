@@ -298,3 +298,7 @@ So the unilateral model with a lower posture weight is the first variant in this
 - (d) W_COM=30: 16/16 on four seeds; seed 126 fails one push (−x min 75 N).
 
 By the rule, **W_POST=0.05 (other settings as the base) is selected.** Next (declared): one run on unused held-out seeds 130–134, with no further tuning. That run is the verdict for this round.
+
+**Round 7 held-out verdict: W_POST=0.05 on unused seeds 130–134 (run once, no tuning; `r7_heldout_130_134.json`, git-ignored): FAIL.** Seeds 131–134 hold all 16 pushes with quiet tilt 0.00–0.02°. Seed 130 holds quiet standing (0.02°) but misses the −x 100 N push (15/16). Because the −x 100 N push is the target of this round, this is a FAIL under the declared rule. It is one miss in 80 push trials on the held-out set, but it is the same push that failed on every seed in round 6.
+
+**Status after round 7:** Stage A is not passed by this configuration. Round 7 selected W_POST=0.05 on tuning seeds 125–129, and the held-out run on 130–134 fails on seed 130. Seeds 135 and above are unused, and no further tuning has been done on the held-out seeds.
