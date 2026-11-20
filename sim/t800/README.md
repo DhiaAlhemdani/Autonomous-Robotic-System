@@ -77,6 +77,24 @@ Open questions and caveats:
 - **Standing height is 1.01 m, not 0.87 m.** The keyframe height (0.87 m) was for the welded case. The reason for the taller stance is not checked.
 - **Ankle torque limit: inconclusive.** During the −150 N push the ankle command saturated at its 160 N·m limit for 313 steps, and the hips did not saturate. But doubling the ankle limit in the model gave identical results, so I can't attribute the fall to the limit. The result is not settled.
 - **Gains are selected on the same pushes used to report them.** Treat the push results as a check on the chosen gains, not as held-out evidence.
+
+### Stage A evaluation with pre-declared criteria (`stage_a_eval.py`)
+
+The earlier table reused the pushes that picked the gains. `stage_a_eval.py` sets the criteria before the run and uses held-out pushes of 25, 50, 75 and 100 N in four directions. It starts each seed from small random joint offsets of ±0.02 rad (seeds 0–4, ASSUMPTION). Stage A passes only if quiet standing holds and every held-out push recovers for every seed. The controller is unchanged.
+
+Result: **FAIL** (`python sim/t800/stage_a_eval.py`; output in `runs/stage_a/eval.json`, git-ignored).
+
+| Seed | Quiet standing | Max tilt before fall or end (deg) | Held-out pushes |
+| --- | --- | --- | --- |
+| 0 | **Fell at 2.16 s** | 19.95 | 0 / 16 (already fallen) |
+| 1 | Held, final tilt 3.5° | 4.68 | 16 / 16 |
+| 2 | Held, final tilt 4.3° | 5.58 | 16 / 16 |
+| 3 | Held, final tilt 4.6° | 5.51 | 16 / 16 |
+| 4 | **Fell at 2.12 s** | 18.78 | 0 / 16 (already fallen) |
+
+Diagnosis, not a fix. Seeds 0 and 4 start with the whole-body centre of mass about 0.12 m ahead of the feet, produced by the joint offsets. In seed 0 the ankle pitch command sits at its 160 N·m limit for about 630 control steps in the first 3 s, against about 50 for seed 1. The ankle authority looks exhausted, but the controller was not changed and this is not proven. Seeds 2 and 3 pass with little margin, reaching 5.5° during standing. Changing the controller needs a decision first (e.g. a stepping strategy, a different ankle/hip split, or a narrower initial-offset scope).
+
+Scope: simulation only. No claim of balance under larger pushes, walking, or hardware transfer.
 - Only 1 contact-free test per push direction; no noise, delay or model error. This is simulation only.
 
 ## Native 3D viewer (run on your laptop)
