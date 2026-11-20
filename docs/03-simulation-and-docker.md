@@ -72,7 +72,7 @@ Pick one and document it; mixing them produces intermittent, hours-long debuggin
 | Mount | Contents | Committed to git? |
 | --- | --- | --- |
 | `./src`, `./config`, `./scenarios` | Source, configuration, scenario definitions | **Yes** |
-| `./models` | Trained weights | **No** — external store + checksums (SR-07) |
+| `./models` | Trained weights | **No** — fetched from the upstream at a pinned revision and checked against SHA-256 / blob hashes (`scripts/fetch_grounding_dino.py`; SR-07). Not wired into an image yet |
 | `./data` | Datasets, maps, recorded bags | **No** |
 | `./runs` | Per-run output: bags, event logs, metadata JSON, reports | **No** (small curated reports may be committed) |
 | `./artifacts` | Generated plots, benchmark tables | Selected only |

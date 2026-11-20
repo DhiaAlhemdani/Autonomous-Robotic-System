@@ -5,9 +5,11 @@
 runs/
 data/
 models/*
-# Model weights stay out of git (SR-07); small config files and records are tracked
-models/**/*.safetensors
+# Model files are fetched from their upstream at a pinned revision (scripts/fetch_grounding_dino.py), not committed (SR-07).
+# Only the record file is tracked.
 !models/grounding-dino-base/
+models/grounding-dino-base/*
+!models/grounding-dino-base/WEIGHTS.md
 artifacts/
 
 # ROS 2 build products
