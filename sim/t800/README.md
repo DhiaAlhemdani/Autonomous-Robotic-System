@@ -385,3 +385,11 @@ So the balance law holds the −x 100 N push on every seed where quiet standing 
 - Under the declared rule, no margin passes, so no held-out run on seeds 180–184.
 - Reading: the CoP guard does not fix the quiet failures. Seed 176 falls with the guard on and off. The guard at 0.02 and 0.04 m slightly helps seed 178 but hurts nothing else. This shows that the balance law itself is unreliable on fresh seeds: at control, three of five tuning seeds fail. The earlier 160–164 evaluation (4/5 pass) therefore overstates reliability.
 - Stage A is not passed. The guard default stays off (`cop_margin = 0`), so the committed balance-law behaviour is unchanged. Seeds 175–179 are now used. Seeds 180 and up are unused.
+
+**Declared test: CoP projection on the balance law (declared before any code is written or run).**
+- Design (replaces the guard as the candidate; the guard is refuted above). Capture-point reference: `r_raw = x_com + v_com / omega`, with `omega = sqrt(g / 0.87)` (pelvis height). The reference is projected onto the active foot contact extent shrunk by `inset` at each edge: `r_proj = clip(r_raw, heel + inset, toe - inset)`. The ankle feedback then tracks the projected reference: `fb = kc * (r_proj - cop_x)`, with `kc` = 3.0 from `DEFAULT_CFG`. The integral and rate terms are not used. The hip term is unchanged. If there is no floor contact, the controller falls back to the existing feedback.
+- Grid: `proj_inset` ∈ {0 (off, existing law), 0.02 m, 0.04 m}. Sign +1.
+- Tuning seeds: **185–189** (never used). Pass criteria: the same as the CoP-guard round (quiet standing: no fall, final tilt < 5°, pelvis z > 0.8 m; and the −x 100 N push holds, via `wbc_eval.py` `episode`).
+- Selection rule: keep the values where every tuning seed passes both the quiet and the push criteria. Among those, choose the lowest maximum quiet tilt. Ties go to the smaller inset.
+- Then one full Stage A run of the selected value on unused seeds **190–194**, with no further tuning. The verdict of that run stands.
+- Scope: simulation only. A FAIL closes the projection design on this controller.
