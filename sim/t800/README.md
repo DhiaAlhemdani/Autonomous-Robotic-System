@@ -434,3 +434,39 @@ So the balance law holds the −x 100 N push on every seed where quiet standing 
 - Reading: the swing makes seeds 190, 193 and 194 fall, which hold without it. So the single-support stance law is not robust. Seeds 191 and 192 already fail before any swing, so the balance law is marginal in double support as well. Both results were recorded before any further change.
 - Code change kept (`stepper.py`): single-support commands go to the stance leg only, and the trigger can be switched off. Its default path (trigger on) is the experimental stepper; it is not used in any claim. The behaviour of the balance law in double support is unchanged.
 - Round 12 (capture-point stepping) is therefore **not declared**. Stage A stays NOT PASSED. Seeds 160–194 are used. Seeds 195 and up are unused.
+
+## Seed ledger (final; closes the seed bookkeeping)
+
+Every seed range used for any test in this README, with its status. A range marked **burned** may not be used as a clean held-out set again. Ranges marked **unused** have never been run.
+
+| Seeds | Use | Status |
+|---|---|---|
+| 0–9 | early evaluation, start-target and reproduction runs | burned (used for the start-target FAIL) |
+| 10–14 | held-out pass for the W_ORI=20 configuration | burned |
+| 15–19 | tuning and diagnostic (seed 19 fails) | burned |
+| 20–24 | held-out run (round 3) | burned |
+| 25–29 | held-out run (round 3) | burned |
+| 30–34 | held-out run (FAIL on 31 and 34) | burned |
+| 35–39 | held-out run (PASS) | burned |
+| 40–44 | declared round 4, not run | unused |
+| 100–104 | tuning rounds 1–3 | burned (tuning) |
+| 105–109 | tuning round 4 (seed 106 fails) | burned (tuning) |
+| 110–114 | tuning round 5 | burned (tuning) |
+| 115–119 | declared held-out, not run | unused |
+| 120–129 | tuning round 6 (seed 124 falls) | burned (tuning); 125–129 not referenced, treat as burned |
+| 130–134 | held-out round 7 (FAIL, seed 130) | burned |
+| 135–139 | tuning round 8 | burned (tuning) |
+| 140–144 | held-out round 8 (FAIL, seeds 142, 143) | burned |
+| 145–149 | tuning round 9 (no selection); seed 146 diagnostic | burned (tuning) |
+| 150–154 | declared held-out, not run | unused |
+| 155–159 | not referenced in the record | treat as burned |
+| 160–164 | balance-law full evaluation (4/5 pass, FAIL on 161) | burned |
+| 165–169 | integral-action tuning (refuted) | burned (tuning) |
+| 170–174 | declared held-out, not run | unused |
+| 175–179 | CoP-guard tuning (refuted) | burned (tuning) |
+| 180–184 | declared CoP-guard held-out, not run | unused |
+| 185–189 | CoP-projection tuning (refuted) | burned (tuning) |
+| 190–194 | round 11 single-support gate (FAIL) | burned (tuning) |
+| 195–199 and up | never used | unused |
+
+**Final seed statement.** Stage A is not passed. No seed range from this table remains a clean held-out set for the balance law, except the unused ranges, which may only be used under a new declared round with a stated design. The seed bookkeeping is closed. No further seed-based runs are planned without a new design and the project owner's decision.
