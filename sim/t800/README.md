@@ -345,3 +345,9 @@ A bounded foot correction does not stop the fall. The design is **refuted on thi
 **Change of approach: the existing ankle-CoM plus hip-pitch balance law (`balance.py`, `--controller balance`) instead of the foot-acceleration QP.** Motive: the QP's foot-pitch loop failed at push impact on every foot-acceleration law tested. The balance law holds seeds 130, 142, 143 and 146 under the −x 100 N push with both feet flat (8 contacts), with final tilt 3.1–3.2° (under the 5° limit). Its gains were fixed before this round and are not tuned.
 
 **Evaluation (declared before any run; seeds 160–164, never used by any controller; no tuning, no selection).** Full Stage A protocol with `--controller balance`: quiet standing, then 25/50/75/100 N in each of ±x and ±y, at the declared criteria (TILT_OK_DEG 5°, Z_OK_M 0.8 m, no fall within the push window). Seeds 0–4 are not used here, because their use for the earlier verdict is recorded. This is an evaluation of a fixed controller, not a tuning round; a FAIL here closes this approach.
+
+**Result: balance law, full Stage A protocol on unused seeds 160–164 (`balance_160_164.json`, git-ignored): FAIL, on one seed.**
+- Seeds 160, 162, 163, 164: quiet standing holds (final tilt 3.2–3.7°) and all 16 pushes (25–100 N, ±x and ±y) are recovered.
+- Seed 161: does **not** fall, but quiet standing settles at 7.5° (limit 5°). The push trials are then not valid for this seed (0/16).
+
+So the balance law holds the −x 100 N push on every seed where quiet standing is within limit. It fails only on a quiet-standing offset on seed 161. The settled tilt (3.1–7.5°) is a steady-state offset that depends on the start pose. My reading is that the balance law has no integral action on tilt, so the offset is not removed. That is a hypothesis, not yet tested. Stage A is not passed by this approach.
