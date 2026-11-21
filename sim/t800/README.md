@@ -421,3 +421,9 @@ So the balance law holds the −x 100 N push on every seed where quiet standing 
 - Gate test (round 11): a zero-displacement swing of the left foot (start 1.0 s, duration 1.2 s, lift 0.04 m, pose held), no push, on tuning seeds **190–194** (never used). Pass criteria: no fall, final tilt < 5°, pelvis z > 0.8 m, for all five seeds.
 - If round 11 passes, round 12 is declared separately (capture-point step on tuning seeds 190–194, against −x 100 N), and the held-out run is on seeds 195–199. If round 11 fails, step adjustment is closed on this controller and the failure is recorded.
 - Scope: simulation only; no claim of walking, of balance under large pushes, or of hardware transfer. All step timings are ASSUMPTION values.
+
+**Amendment to round 11 (declared before any run).** Reading `stepper.py` showed that the existing loop writes the ankle and hip balance commands to both legs during a swing, which overwrites the swing leg's IK targets. The amendment makes the round-11 law explicit:
+- Single support: the balance ankle command is written to the **stance** ankle only (`J04` for L, `J10` for R), and the balance hip command to the **stance** hip only. The swing leg takes its IK targets only.
+- Double support: unchanged (the existing `balance.py` law on both legs).
+- The capture trigger is switchable (`trigger_enabled`, default on). In the gate test it is off, and the swing is started by the driver at t = 1.0 s (zero displacement, lift 0.04 m, duration 1.2 s).
+- The gate remains tuning seeds 190–194, with the same criteria as above.
