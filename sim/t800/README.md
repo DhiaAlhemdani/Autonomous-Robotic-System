@@ -322,3 +322,10 @@ By the rule (lowest maximum quiet tilt among configurations that pass all pushes
 **Redesign 1: centre-of-mass reference over the middle of the sole.** Motive: the sole spans x = −0.110 to +0.157 m (`wbc.py` SOLE_X), so the centre-of-mass target at −0.07 m sits 0.04 m from the heel edge. A −x push moves the centre of mass toward that edge, which may be why the −x 100 N push is the one that fails. The design change is the target placement, not a gain: the target moves toward the middle of the sole (x ≈ 0.02). Implementation: `wbc_eval.py --com-target` (numeric world x), no code change.
 
 **Tuning round 9 (declared before any run; tuning seeds 145–149, never used).** Base controller: unilateral model, `W_FOOT=50`, `W_ORI=30`, `W_POST=0.05`. Grid, all at these weights: (a) CoM target −0.07 m (control, current design); (b) CoM target 0.00 m; (c) CoM target 0.02 m. Selection rule (same as rounds 2–8): keep configurations that hold all 16 pushes on every tuning seed with no falls and quiet standing ok; among those, lowest maximum final quiet tilt. Then one run of the selected configuration on unused held-out seeds 150–154, with no further tuning. Seeds 135–144 are not used for selection.
+
+**Tuning round 9 results (seeds 145–149; `r9_a.json`–`r9_c.json`, git-ignored). No configuration selected.**
+- (a) CoM −0.07 m (control): 16/16 on seeds 145 and 148 and 149; misses one push on seeds 146 and 147 (15/16, −x 100 N). No falls.
+- (b) CoM 0.00 m: holds quiet standing, but misses pushes on every seed (13–14/16).
+- (c) CoM 0.02 m: falls on every seed (0.8–1.4 s).
+
+Moving the centre-of-mass target toward the middle of the sole **did not help**: forward targets make the robot worse. So the redesign hypothesis (more backward margin from a forward target) is refuted. The control is the best of the three, and it still fails on two seeds. Held-out seeds 150–154 are not run, because nothing was selected. Seeds 150+ remain unused.
