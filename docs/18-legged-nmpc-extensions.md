@@ -248,3 +248,14 @@ Tried a separate lateral CoM position weight Q_PY (the reference is unchanged, y
 - Q_PY = 0.5: falls at 2.29 s, 4 NMPC failures.
 - Q_PY = 0: falls at 2.36 s, 5 NMPC failures.
 Standing unchanged in all three. Reverted; not kept. Lowering the lateral cost delays the fall slightly but does not stop it, which suggests the lateral ZMP constraints (§10.5) are the binding limit, not the cost weight.
+
+## 10.7 Linear inverted pendulum lateral reference, negative result
+
+Replaced the lateral CoM reference with the steady-state linear inverted pendulum response to the foot-centre ZMP square wave (±FOOT_Y, half period PERIOD/2). Fundamental amplitude A = (4/π)·FOOT_Y·ω0²/(ω0² + ω1²), with ω0² = g/Z_NOM and ω1 = 2π/PERIOD. A = 0.027 m at the current gait, and the ZMP amplitude check reproduces (4/π)·FOOT_Y = 0.154 m.
+
+Result, v = 0.2 m/s, 6 s:
+- NMPC solves: 0 failures (was 4 with the committed reference). The predicted CoM tracks this reference to about 5 mm through 0.9 s.
+- The walk still falls, earlier: 1.23 s (was 2.14 s).
+- Failure sequence: from about 0.85 s the stance contact drops to 1–2 points, the pelvis yaw diverges (−0.22 rad at 1.05 s, −1.0 rad at 1.15 s), and the robot falls. Yaw divergence was already seen in §10.2; it is now the first observed failure.
+
+Reverted, not kept as default. The lateral CoM is now feasible for the NMPC, so the next blocker is yaw and single-foot contact, not the lateral reference. Yaw control (through the floating-base QP and the stance friction authority) is the next thing to diagnose.
