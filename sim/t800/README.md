@@ -402,3 +402,15 @@ So the balance law holds the −x 100 N push on every seed where quiet standing 
 - Reading: the capture-point projection, applied as a tracking law on the ankle, makes the robot fall. The control law is the more reliable of the two designs here. Its only failure on these seeds is one push on seed 187.
 
 **Closing the CoP work.** Three CoP-related designs have now been declared and tested on the balance law: the CoP guard (`cop_margin`), the integral term (`ki`) and the CoP projection (`proj_inset`). None passed its declared rule. This track is closed. Stage A is **not passed** by the balance law. The committed defaults are unchanged (`ki=0`, `cop_margin=0`, `proj_inset=0`). Seeds 160–189 are used. Seeds 190 and up are unused. Any further design needs its own declared round.
+
+**Stage A verdict (recorded): NOT PASSED.** Simulation only; no claim of balance under large pushes, walking, or hardware transfer.
+- Balance law (`balance.py`, defaults `ki=0`, `cop_margin=0`, `proj_inset=0`): held-out evaluation on seeds 160–164 passed 4/5 seeds, with the failure on seed 161 (quiet tilt 7.5° > 5°). Fresh tuning seeds show further quiet-standing failures (seed 176 falls; seed 178 settles above 5°). Stage A is not passed.
+- Declared CoP-based and integral designs tested on tuning seeds (guard, integral action, projection): none passed their rules. No held-out run was made for them.
+- Earlier rigid-foot and unilateral WBC controllers: not passed (see rounds 7–8 entries above).
+- Seeds 160–189 are used. Seeds 190 and up are unused.
+
+**Checks run after the verdict (no seeds used):**
+- `py_compile sim/t800/*.py`: OK.
+- `planning/tests`: 53 passed (after installing `osqp` into the local virtualenv; not a repo change).
+- `scripts/check_t800_model.py`: OK (model loads, forward step runs; mass is the model value, not measured).
+- Headless viewer smoke (`sim/t800/viewer.py --headless --T 5`): runs and reports; final tilt 3.5°.
