@@ -329,3 +329,9 @@ By the rule (lowest maximum quiet tilt among configurations that pass all pushes
 - (c) CoM 0.02 m: falls on every seed (0.8–1.4 s).
 
 Moving the centre-of-mass target toward the middle of the sole **did not help**: forward targets make the robot worse. So the redesign hypothesis (more backward margin from a forward target) is refuted. The control is the best of the three, and it still fails on two seeds. Held-out seeds 150–154 are not run, because nothing was selected. Seeds 150+ remain unused.
+
+**Root-cause investigation of the −x 100 N failure (seed 146; diagnostic, no round declared).**
+- The push does not topple the robot directly. During the push the centre of mass moves backward (−0.070 to −0.085 m) and both feet **pitch about their heels**: the toe corners rise to about 0.09 m while the heel corners stay on the floor. Once the toes leave the ground the support is lost, and the robot falls forward about 1 s later.
+- Actuator torque limits are reached in only 1–2% of the push window, so torque saturation is not the cause.
+- Making the stance feet hard and stabilised (`FOOT_RIGID=1`, `FOOT_STAB=1`) does **not** fix it. The QP does meet the commanded foot accelerations exactly (checked per step), but the commanded accelerations spike to about 136 rad/s² at push impact, and the foot tilt still grows from 0.02 to about 0.4. The foot pitch loop oscillates at impact.
+- So the root is the **foot pitch loop at push impact**, not the constraint being absent. Acceleration-level foot stabilisation with the current gains (KP_FOOT 80, KD_FOOT 14) and ankle authority does not remove it. This is **not eliminated**. A fix needs a different ankle strategy at impact (for example, the ankle torque limited or re-planned during the push), and that has not been designed or tested.
