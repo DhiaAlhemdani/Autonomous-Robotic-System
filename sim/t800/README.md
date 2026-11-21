@@ -359,3 +359,12 @@ So the balance law holds the −x 100 N push on every seed where quiet standing 
 - Selection rule: keep the values where every tuning seed is quiet-ok (no fall, final tilt < 5°, pelvis z > 0.8 m). Among those, choose the lowest maximum final tilt. Ties go to the smaller `ki`.
 - Then one full Stage A protocol run of the selected value on unused seeds **170–174**, with no further tuning. Seeds 160–164 are not used for selection, and seed 161 is not used for tuning.
 - Not part of this round: the CoP-projection idea from the WBC work. It is deferred because the active controller is now the balance law.
+
+**Result of the declared integral-action test (tuning seeds 165–169, quiet standing 20 s; `runs/stage_a/ki_tune_165_169.json`, git-ignored): no configuration selected; hypothesis refuted.**
+- `ki` = 0.0 (control): seed 168 settles at 5.56° (over the 5° limit); the other four seeds are 3.2–4.2°. Maximum 5.56°.
+- `ki` = 0.3: seed 168 at 5.68°. Maximum 5.68°.
+- `ki` = 1.0: seed 168 at 5.96°. Maximum 5.96°.
+- No fall on any seed. Under the declared rule (every tuning seed quiet-ok), no value passes, so no held-out run on seeds 170–174 is made.
+- Reading: the integral term on CoM error does not remove the quiet offset, and at these gains it slightly increases it. The offset is not caused by a missing integrator. The seed-161 failure and the new seed-168 offset both remain open. The quiet offset is start-pose dependent and is not yet explained.
+- Caveat: this run used a 20 s quiet loop written for the tuning step, not the `wbc_eval.py` episode function, so the numbers may differ slightly from that protocol.
+- Stage A is not passed by the balance law. Seeds 165–174 have been partly used here; seeds 175 and up are unused.
