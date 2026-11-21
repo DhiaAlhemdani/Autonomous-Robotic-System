@@ -376,3 +376,13 @@ So the infeasibility comes from the priority sequence, not from any single targe
 Interpretation: the CoM and posture levels become infeasible once higher levels are fixed exactly, at contact switches. The weighted cost can trade these off and the strict priority cannot. A correct hierarchy needs soft lower-priority levels (slack or inequality bands), not exact equalities. That is a design change. Not implemented; the default stays weighted.
 
 Status: walking not achieved.
+
+## 10.16 Soft hierarchy by weights (single batch)
+
+Hierarchy emulated with weights differing by about two orders of magnitude per level, in the existing weighted QP (no exact equalities):
+- Attitude first (att 1e4, foot 1e3, CoM 1e2, posture 1): standing 0.80 mm; walk v = 0.2 m/s falls at 1.53 s, with 2 NMPC failures and 1 QP failed solve.
+- CoM first (CoM 1e4, att 1e3, foot 1e2, posture 1): standing 0.60 mm; walk falls at 0.84 s, with 0 NMPC failures.
+
+Neither walks. The soft hierarchy does not remove the problem: with weights the QP still cannot meet the attitude, CoM and swing-foot targets together while keeping the stance feasible. This points at the targets themselves (the NMPC plan, the attitude gains and the foot placements) being inconsistent with the contact model. Not adopted; the default stays weighted.
+
+Status: walking not achieved.
