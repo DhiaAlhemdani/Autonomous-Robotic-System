@@ -386,3 +386,16 @@ Hierarchy emulated with weights differing by about two orders of magnitude per l
 Neither walks. The soft hierarchy does not remove the problem: with weights the QP still cannot meet the attitude, CoM and swing-foot targets together while keeping the stance feasible. This points at the targets themselves (the NMPC plan, the attitude gains and the foot placements) being inconsistent with the contact model. Not adopted; the default stays weighted.
 
 Status: walking not achieved.
+
+## 10.17 Joint feasibility of the hard task set (single batch)
+
+Check, on each tick of a 2 s walk (weighted default), whether all four tasks can hold exactly at once (band ±0.01 in task units): CoM, attitude, swing foot and posture, under the contact and friction constraints.
+- All four together: infeasible on all 40 ticks, including the first ticks.
+- Dropping the posture task restores feasibility on 32 of those 40 ticks. Dropping CoM, attitude or swing foot restores none.
+- With the torque bounds relaxed to 1e6 N·m, the four-task set is still infeasible on all 40 ticks. Torque limits are not the cause.
+
+Counting explanation: the hard set asks for 22 independent accelerations (CoM 3, attitude 3, swing foot 3, posture 13). The QP has 13 leg and waist torques and the stance foot forces, and the contact constraints remove base accelerations. The posture task alone uses the full torque budget, so exact posture leaves no freedom for CoM and attitude. This is over-determination, not a bound conflict.
+
+Consequence: posture must be soft (as in the weighted default). Strict priority over posture cannot be feasible. The priority and hierarchy tests in §10.14–§10.16 that kept posture as a fixed level were infeasible for this reason, so they do not test the hierarchy itself. A fair hierarchy test needs posture removed from the hard set and CoM, attitude and swing foot given the remaining freedom. Not run here.
+
+Status: walking not achieved.
