@@ -337,3 +337,15 @@ Cost-weight test (attitude weight `att`, swing-foot weight `foot`; other weights
 - att 100, foot 20 (2 s run): falls 1.63 s, roll residual 0.18 rad/s².
 
 Changing the weights trades roll tracking against CoM tracking, but no pair walks. Weights are not the root cause. The unrealised targets point to the requested accelerations being inconsistent with the contact model (friction and single-support geometry). That is not yet tested. Reverted: no controller change.
+
+## 10.13 Friction feasibility and vertical CoM target (single batch)
+
+Friction feasibility, walk v = 0.2 m/s, 2 s: the friction utilisation (horizontal force over MU times normal force) peaks at 0.58, so friction is not binding. The requested horizontal CoM acceleration exceeds its limit in 10% of ticks, with a maximum of 11 m/s² against a limit near 5 m/s². The achieved horizontal acceleration peaks at 1.7 m/s². The requested vertical CoM acceleration reaches 37 m/s², which is larger than the normal forces can give.
+
+Vertical target test, walk v = 0.2 m/s, 6 s (each variant in its own process):
+- Baseline: falls 2.02 s, 4 NMPC failures.
+- Constant height reference (ignore the NMPC height): falls 1.80 s, 4 NMPC failures.
+- Vertical target clamped to ±5 m/s²: falls 2.02 s.
+- Vertical target clamped to ±10 m/s²: falls 2.02 s.
+
+Neither the friction limit nor the vertical target explains the fall. Reverted: no controller change.
