@@ -411,3 +411,19 @@ Walk v = 0.2 m/s, 6 s; standing 3 s:
 Result: with posture soft, the three remaining hard tasks (9 accelerations) are still infeasible on many ticks. Each is feasible alone and in pairs (§10.15), so the conflict is among CoM, attitude and swing foot together under the contact and friction constraints. Posture was not the only conflict; §10.17's over-determination argument covered posture only.
 
 Not adopted. The default stays weighted. Status: walking not achieved.
+
+## 10.19 Joint feasibility of CoM, attitude and swing foot: the torque limit (single batch)
+
+Check on the 26 walking ticks with swing-foot targets (weighted default, first 2 s): CoM, attitude and swing-foot accelerations held jointly.
+- Base (friction and torque limits as designed): 22 of 26 feasible.
+- Friction removed (MU = 100): 0 of 26 feasible. Friction is not the conflict.
+- Torque limits removed: 26 of 26 feasible. The conflict is the actuator torque budget.
+
+Redesign tested: clamp the attitude target and the swing-foot target to a fixed maximum magnitude, so the joint torques they demand stay within the budget. Walk v = 0.2 m/s, 6 s:
+- Clamp 3: falls at 1.71 s, 5 NMPC failures.
+- Clamp 1: falls at 1.55 s, 1 NMPC failure, 1 QP failed solve.
+- Clamp 0.3: falls at 1.73 s, 4 NMPC failures.
+
+Clamping the magnitude of the targets does not make the walk stable. The torque conflict is real, but simply capping the targets does not remove it. The target directions, not only their size, must be consistent with the stance. Not adopted; the controller is unchanged.
+
+Status: walking not achieved.
