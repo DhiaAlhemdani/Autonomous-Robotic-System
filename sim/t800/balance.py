@@ -107,7 +107,46 @@ class Robot:
 HIP_PITCH = ["J00_HIP_PITCH_L", "J06_HIP_PITCH_R"]
 
 
-DEFAULT_CFG = dict(sign=+1.0, kc=3.0, kv=0.5, hip_sign=+1.0, kh=2.0, ki=0.0)
+# cop_margin: CoP guard (declared round, default 0 = off). If the CoM error points toward a sole edge and the
+# CoP is within cop_margin of that edge, the ankle feedback term is zeroed.
+DEFAULT_CFG = dict(sign=+1.0, kc=3.0, kv=0.5, hip_sign=+1.0, kh=2.0, ki=0.0, cop_margin=0.0)
+
+
+def foot_contact_extent_x(r):
+    """(min, max) world x of the active foot floor contact points (support extent in x), or None."""
+    m, d = r.m, r.d
+    floor = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_GEOM, "floor")
+    xs = []
+    for i in range(d.ncon):
+        c = d.contact[i]
+        if floor not in (c.geom1, c.geom2):
+            continue
+        other = c.geom2 if c.geom1 == floor else c.geom1
+        body = mujoco.mj_id2name(m, mujoco.mjtObj.mjOBJ_BODY, m.geom_bodyid[other]) or ""
+        if "FOOT_L" in body or "FOOT_R" in body or "ANKLE_ROLL_L" in body or "ANKLE_ROLL_R" in body:
+            xs.append(c.pos[0])
+    return (min(xs), max(xs)) if xs else None
+
+
+def cop_x(r):
+    """Centre of pressure along world x from the floor contact normal forces (None if no contact)."""
+    m, d = r.m, r.d
+    floor = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_GEOM, "floor")
+    fsum, xsum = 0.0, 0.0
+    f = np.zeros(6)
+    for i in range(d.ncon):
+        c = d.contact[i]
+        if floor not in (c.geom1, c.geom2):
+            continue
+        other = c.geom2 if c.geom1 == floor else c.geom1
+        body = mujoco.mj_id2name(m, mujoco.mjtObj.mjOBJ_BODY, m.geom_bodyid[other]) or ""
+        if not ("FOOT_L" in body or "FOOT_R" in body or "ANKLE_ROLL_L" in body or "ANKLE_ROLL_R" in body):
+            continue
+        mujoco.mj_contactForce(m, d, i, f)
+        fn = abs(f[0])
+        fsum += fn
+        xsum += fn * c.pos[0]
+    return xsum / fsum if fsum > 1e-6 else None
 
 
 class BalanceController:
@@ -132,8 +171,15 @@ class BalanceController:
         ev = (e - self.prev) / dt
         self.prev = e
         self.integ = self.integ + e * dt
-        cmd = {n: cfg["sign"] * (cfg["kc"] * e[0] + cfg["kv"] * ev[0] + cfg["ki"] * self.integ[0])
-               for n in ANKLE_PITCH}
+        fb = cfg["sign"] * (cfg["kc"] * e[0] + cfg["kv"] * ev[0] + cfg["ki"] * self.integ[0])
+        if cfg["cop_margin"] > 0.0:
+            cop = cop_x(r)
+            ext = foot_contact_extent_x(r)
+            if cop is not None and ext is not None:
+                heel, toe = ext
+                if (e[0] > 0 and toe - cop < cfg["cop_margin"]) or (e[0] < 0 and cop - heel < cfg["cop_margin"]):
+                    fb = 0.0
+        cmd = {n: fb for n in ANKLE_PITCH}
         hip = cfg["hip_sign"] * cfg["kh"] * r.pitch_rad()
         for n in HIP_PITCH:
             cmd[n] = hip

@@ -377,3 +377,11 @@ So the balance law holds the −x 100 N push on every seed where quiet standing 
 - Selection rule: keep the values where every tuning seed passes both quiet standing and the −x 100 N push. Among those, choose the lowest maximum final tilt. Ties go to the smaller margin. If none passes, no held-out run.
 - Then one full Stage A protocol run of the selected value on unused seeds **180–184**, with no further tuning. Seeds 160–169 are not used for selection.
 - Scope: simulation only. A FAIL here closes this guard design on this controller.
+
+**Result of the declared CoP-guard test (tuning seeds 175–179, `wbc_eval.py` `episode` with `--controller balance`, quiet standing plus −x 100 N push; `runs/stage_a/cop_tune_175_179.json`, git-ignored): no margin selected; guard refuted.**
+- `cop_margin` = 0 (control, guard off): seed 175 quiet 10.7° (fails); seed 176 **falls at 1.86 s** in quiet standing; seed 177 passes; seed 178 quiet 5.8° (fails); seed 179 passes. All five seeds fail the rule.
+- `cop_margin` = 0.02 m: seed 175 quiet 9.4° (fails); seed 176 **falls at 1.93 s**; seeds 177, 178, 179 pass both quiet and push. Fails the rule on 175 and 176.
+- `cop_margin` = 0.04 m: seed 175 quiet 9.4° (fails); seed 176 **falls at 1.93 s**; seed 178 quiet 5.06° (fails); seeds 177, 179 pass. Fails the rule.
+- Under the declared rule, no margin passes, so no held-out run on seeds 180–184.
+- Reading: the CoP guard does not fix the quiet failures. Seed 176 falls with the guard on and off. The guard at 0.02 and 0.04 m slightly helps seed 178 but hurts nothing else. This shows that the balance law itself is unreliable on fresh seeds: at control, three of five tuning seeds fail. The earlier 160–164 evaluation (4/5 pass) therefore overstates reliability.
+- Stage A is not passed. The guard default stays off (`cop_margin = 0`), so the committed balance-law behaviour is unchanged. Seeds 175–179 are now used. Seeds 180 and up are unused.
