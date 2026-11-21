@@ -3,7 +3,7 @@
 Per call, for the current MuJoCo state, with an active-contact mask per foot:
   unknowns  x = [qdd (nv), tau (na), f (3 per sole corner, 4 corners per foot)]
   equality  M qdd + qfrc_bias = S tau + Jc^T f            floating-base dynamics with contact forces
-  equality  Jc_active qdd = 0                              active contact points do not accelerate (Jdot qd ignored)
+  equality  Jc_active qdd = -Jdot_active qd                active contact points do not accelerate (Jdot qd included, docs/18 §10.11)
   equality  f_inactive = 0                                 swing foot carries no force
   bounds    |tau_i| <= torque limit; |fx|,|fy| <= MU fz; fz >= 0
   cost      weighted least squares: CoM acceleration, base attitude/yaw acceleration, swing-foot
@@ -45,14 +45,25 @@ class WBCQP:
         m = self.m
         Jc = np.zeros((self.npt, 3, self.nv))
         pts = np.zeros((self.npt, 3))
+        self.Jdq_corner = np.zeros((self.npt, 3))
         for fi, fb in enumerate(self.feet):
             R = d.xmat[fb].reshape(3, 3)
             for ci, c in enumerate(self.sole_local[fi]):
                 k = fi * N_CORNERS + ci
                 p = d.xpos[fb] + R @ c
                 mujoco.mj_jac(m, d, Jc[k], None, p, fb)
+                Jd = np.zeros((3, self.nv))
+                mujoco.mj_jacDot(m, d, Jd, None, p, fb)
+                self.Jdq_corner[k] = Jd @ d.qvel
                 pts[k] = p
         return Jc, pts
+
+    def _body_jdq(self, d, body, point=None):
+        """(Jdot qd) of a body's point (translational) and rotational part, as in mj_jacDot."""
+        p = d.xpos[body] if point is None else point
+        jp = np.zeros((3, self.nv)); jr = np.zeros((3, self.nv))
+        mujoco.mj_jacDot(self.m, d, jp, jr, p, body)
+        return jp @ d.qvel, jr @ d.qvel
 
     def solve(self, d, targets):
         """targets: 'active' (bool per foot), 'com_acc' (3,), 'att_acc' (3,), 'post_acc' (na,),
@@ -76,6 +87,7 @@ class WBCQP:
         Aeq[:nv, nv + na:] = -Jc.T
         beq = np.zeros(neq)
         beq[:nv] = -bias[:nv]
+        beq[nv:nv + n_act_rows] = -self.Jdq_corner.reshape(-1)[active]
         Aeq[nv:nv + n_act_rows, :nv] = Jc[active]
         r = nv + n_act_rows
         for k in np.where(~active)[0]:
@@ -116,13 +128,15 @@ class WBCQP:
         Jcom_x = np.zeros((3, nx)); Jcom_x[:, :nv] = Jcom
         add(Jcom_x, targets["com_acc"], w["com"])
         Jw_x = np.zeros((3, nx)); Jw_x[:, :nv] = Jw
-        add(Jw_x, targets["att_acc"], w["att"])
+        _, jdq_w = self._body_jdq(d, 1)
+        add(Jw_x, np.asarray(targets["att_acc"]) - jdq_w, w["att"])
         Jp_x = np.zeros((na, nx)); Jp_x[:, self.act_dofs] = np.eye(na)
         add(Jp_x, targets["post_acc"], w["post"])
         for fi, a in targets.get("foot_acc", []):
             jp = np.zeros((3, nv)); mujoco.mj_jacBody(m, d, jp, None, self.feet[fi])
             Jf_x = np.zeros((3, nx)); Jf_x[:, :nv] = jp
-            add(Jf_x, a, w["foot"])
+            jdq_f, _ = self._body_jdq(d, self.feet[fi])
+            add(Jf_x, np.asarray(a) - jdq_f, w["foot"])
         Jt_x = np.zeros((na, nx)); Jt_x[:, nv:nv + na] = np.eye(na)
         add(Jt_x, np.zeros(na), w["tau"])
         Jf_x = np.zeros((nf, nx)); Jf_x[:, nv + na:] = np.eye(nf)

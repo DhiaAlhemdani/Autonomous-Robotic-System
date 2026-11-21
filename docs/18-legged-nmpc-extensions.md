@@ -310,3 +310,13 @@ Findings:
 - Yaw attitude gain is not the cause (G falls at 1.50 s, earlier than A).
 
 Status: walking not achieved. The next diagnosis is the roll of the stance foot with one or two contacts (§10.9), which none of these variants addresses.
+
+## 10.11 Whole-body QP: Jdot qd terms (start of the QP audit)
+
+Audit of `wbc_qp.py`. The QP ignored Jdot·qd in three places: the active-contact acceleration constraint (J qdd = 0 instead of J qdd + Jdot qd = 0), the base attitude target and the swing-foot target. The dynamics and friction rows were checked and are correct. The fix uses `mj_jacDot` for the corner points, the base body and the foot bodies. The CoM target still has no Jdot term (MuJoCo's subtree-CoM Jacobian derivative is not used); this is a known remaining approximation.
+
+Results (single runs, MuJoCo 3.2.3):
+- Standing v=0, 3 s: CoM xy error 0.77 mm (unchanged). `test_walk_qp` standing and push tests pass.
+- Walking v=0.2 m/s, 6 s: falls at 2.02 s with 4 NMPC failures (was 2.14 s). This is within run-to-run noise, not an improvement.
+
+Status: the fix is a correctness correction to the QP's constraints. It does not explain the stance-foot roll. Walking not achieved.
