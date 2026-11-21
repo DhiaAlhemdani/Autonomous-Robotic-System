@@ -427,3 +427,15 @@ Redesign tested: clamp the attitude target and the swing-foot target to a fixed 
 Clamping the magnitude of the targets does not make the walk stable. The torque conflict is real, but simply capping the targets does not remove it. The target directions, not only their size, must be consistent with the stance. Not adopted; the controller is unchanged.
 
 Status: walking not achieved.
+
+## 10.20 Walking work stopped; push recovery verified at declared timing
+
+Walking work is stopped here. The walking gate G2 (docs/19 §7) fails in every variant tested (§10.1–§10.19). The walking test is kept as a known failure (`xfail`) with its reason, not relaxed.
+
+Push recovery at the declared gate timing (docs/19 G1): push 0.2 s at t = 3 s, run to 6 s, standing NMPC + QP controller:
+- 30 N in x: no fall, CoM xy error 0.87 mm after 6 s, 0 NMPC failures, 120 QP solves.
+- 60 N in y: no fall, CoM xy error 0.83 mm after 6 s, 0 NMPC failures, 120 QP solves.
+
+Single runs with fixed pushes. This is not a robustness claim: no seed sweep and no other push directions or magnitudes were tested. The tuning and held-out seed sweeps are not run.
+
+`planning/tests/test_walk_qp.py`: 3 passed, 1 xfailed (walking).

@@ -64,7 +64,7 @@ Test order (each a single run; no seed sweeps): log per-tick yaw torque from the
 - G3 walking v = 0.2 m/s with a declared push: no fall after the push.
 - Walking is claimed only after G2 passes on the tuning seeds and G3 passes on held-out seeds (docs/17 seed rule).
 
-Current status: G0 passes; G1 is not run at the declared timing; G2 fails (falls at 1.2–2.4 s depending on variant).
+Current status (docs/18 §10.20): G0 passes (0.77 mm). G1 passes at the declared timing (30 N x and 60 N y, 0.2 s at t = 3 s; no fall; CoM xy error 0.87 mm and 0.83 mm after 6 s; single runs). G2 fails (falls at 1.2–2.4 s depending on variant). G3 not run. Walking work is stopped (see docs/18 §10.20); walking is not claimed.
 
 ## 8. Build order
 
