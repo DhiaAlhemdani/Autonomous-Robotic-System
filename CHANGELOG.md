@@ -2,6 +2,10 @@
 
 All notable changes to this design record. Format inspired by Keep a Changelog; the project is pre-implementation, so entries are design records rather than releases.
 
+## [Unreleased] — T800 standing and stepping experiments removed
+
+**Removed:** the standing-controller experiments and their drivers in `sim/t800/` (`balance.py`, `stepper.py`, `wbc.py`, `wbc_eval.py`, `wbc_sweep.py`, `stage_a_eval.py`, `stand_test.py`, `aggregate.py`). The `sim/t800/README.md` now covers only the viewer and the model check. The removed code and results remain in git history. Nothing from these experiments is claimed.
+
 ## [Unreleased] — NMPC from scratch (planar mobile base)
 
 **Added:** `planning/nmpc/` (unicycle model, RK4, direct multiple shooting solved by IPOPT through CasADi, obstacle constraints with slack, warm start, closed-loop harness and seeded sweep), `planning/tests/test_nmpc.py` (5 tests), and `docs/16-nmpc-design.md` (design declared before code; results in §8). CI installs `casadi==3.6.7`.

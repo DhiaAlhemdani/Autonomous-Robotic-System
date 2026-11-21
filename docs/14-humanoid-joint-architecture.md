@@ -219,7 +219,6 @@ Simulation first, in MuJoCo (`docs/11` §2.5), using the T800 model at the pinne
 
 All results record the commit, the seed, the MuJoCo version, and the time step (`docs/01` SR-05). They are sandbox simulation results, not robot results.
 
-The Stage A standing controller (`sim/t800/balance.py`) is a separate experiment. It is a free-base, two-strategy test and is not the locomotion layer. Its results are not carried into this design.
 
 ---
 

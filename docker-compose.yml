@@ -31,7 +31,7 @@ services:
     depends_on: [base]
     profiles: ["sim-only"]
     volumes:
-      - ./third_party/T800-PROJECT:/home/robot/t800:ro
+      - ./vendor/t800:/home/robot/t800:ro
       - ./scripts:/home/robot/scripts:ro
     command: ["python", "/home/robot/scripts/check_t800_model.py", "/home/robot/t800"]
 
@@ -58,7 +58,7 @@ services:
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - ${XAUTHORITY:-/dev/null}:/home/robot/.Xauthority:ro
       - ./sim:/home/robot/sim:ro
-      - ./third_party/T800-PROJECT:/home/robot/third_party/T800-PROJECT:ro
+      - ./vendor:/home/robot/vendor:ro
     command: ["python", "/home/robot/sim/t800/viewer.py"]
 
 
