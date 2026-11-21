@@ -2,9 +2,12 @@
 
 All notable changes to this design record. Format inspired by Keep a Changelog; the project is pre-implementation, so entries are design records rather than releases.
 
-## [Unreleased] — T800 standing and stepping experiments removed
+## [Unreleased] — Legged NMPC extensions (reduced T800 model)
 
 - Legged NMPC (docs/17, docs/18): reduced T800 CoM model with yaw, footstep planner, swing legs, and kinematic whole-body layer. Measured sole geometry and CoM height replace the earlier assumed values. Standing and whole-body residual limits are not met; see docs/18 §9.
+
+## [Unreleased] — T800 standing and stepping experiments removed
+
 
 **Removed:** the standing-controller experiments and their drivers in `sim/t800/` (`balance.py`, `stepper.py`, `wbc.py`, `wbc_eval.py`, `wbc_sweep.py`, `stage_a_eval.py`, `stand_test.py`, `aggregate.py`). The `sim/t800/README.md` now covers only the viewer and the model check. The removed code and results remain in git history. Nothing from these experiments is claimed.
 
