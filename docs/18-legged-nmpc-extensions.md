@@ -228,3 +228,15 @@ Results (single runs, sandbox, MuJoCo 3.2.3):
 - `planning/tests/test_legged_nmpc.py`: 8 passed, 2 failed (tests 2 and 7, the same declared-limit misses).
 
 Not verified: viewer smoothness on the user's laptop; the cause of the 4 NMPC failures during the walk (likely the reference moving faster than the solve period, not tested).
+
+## 10.5 Walking diagnosis (first step), negative results
+
+Diagnosis at v=0.2 m/s (committed settings, §10.4): the robot falls at 2.14 s. The CoM drifts laterally to about -0.05 m by 0.5 s and keeps going to -0.2 m by 1.5 s. The NMPC returns 4 solve failures from 1.8 s, after the drift. Contacts drop to 0-2 during stance around 1.1-1.5 s.
+
+Cause found: the NMPC's lateral CoM reference is y = 0 for straight walking. In single support the support box is centred at y = ±0.121 with half-width 0.055, so y = 0 lies outside it. The reference can't be followed, and the cost pulls the solution against the support constraints. The lateral CoM also has to follow the ZMP: with ZMP = y(1 + z·ω²/g) and ω = 2π/0.9 s, a CoM amplitude of 0.12 m puts the ZMP far outside the box. The gait timing and the lateral reference are inconsistent for this robot height.
+
+Tried, not kept:
+- Lateral reference `y = FOOT_Y·cos(2πt/PERIOD)` (CoM over stance foot): no NMPC failures, but falls earlier at 1.42 s with 2 QP primal-infeasible solves. Reverted.
+- Slower gait, PERIOD 1.8 s / STANCE 1.2 s: falls at 1.62 s with 5 NMPC failures. PERIOD 2.0 s / STANCE 1.3 s: falls at 1.51 s with 4 NMPC failures. Standing unchanged in both. Not kept.
+
+Status: walking is still NOT achieved. The next step needs a ZMP-consistent CoM reference (e.g., linear inverted pendulum preview) or a relaxed lateral position cost. Both are design changes and are not implemented.
