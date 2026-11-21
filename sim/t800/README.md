@@ -427,3 +427,10 @@ So the balance law holds the −x 100 N push on every seed where quiet standing 
 - Double support: unchanged (the existing `balance.py` law on both legs).
 - The capture trigger is switchable (`trigger_enabled`, default on). In the gate test it is off, and the swing is started by the driver at t = 1.0 s (zero displacement, lift 0.04 m, duration 1.2 s).
 - The gate remains tuning seeds 190–194, with the same criteria as above.
+
+**Result of round 11 gate (tuning seeds 190–194; `runs/stage_a/r11_gate_190_194.json`, git-ignored): FAIL on all five seeds. Step adjustment is closed on this controller.**
+- Forced zero-displacement left-foot swing (start 1.0 s, duration 1.2 s, lift 0.04 m), trigger off, single-support stance law as amended: every seed **falls at 1.9–2.2 s** (about 0.9 s into the swing), final tilt 25° (fall cap).
+- Control, same seeds with no swing (double support, balance law): seeds 190, 193, 194 hold (final tilt 3.1–3.4°); seeds 191 and 192 settle at 7.1–7.4° (already over the 5° limit).
+- Reading: the swing makes seeds 190, 193 and 194 fall, which hold without it. So the single-support stance law is not robust. Seeds 191 and 192 already fail before any swing, so the balance law is marginal in double support as well. Both results were recorded before any further change.
+- Code change kept (`stepper.py`): single-support commands go to the stance leg only, and the trigger can be switched off. Its default path (trigger on) is the experimental stepper; it is not used in any claim. The behaviour of the balance law in double support is unchanged.
+- Round 12 (capture-point stepping) is therefore **not declared**. Stage A stays NOT PASSED. Seeds 160–194 are used. Seeds 195 and up are unused.

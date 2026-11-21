@@ -68,6 +68,7 @@ class Stepper:
         self.stance = "both"   # "both" or "L"/"R" (the stance foot in single support)
         self.ik_target = {k: None for k in LEG}  # joint targets for the swing leg
         self.steps_taken = 0
+        self.trigger_enabled = True   # round 11: False for the forced in-place swing gate
         self.prev_c = self.com()
         self.cd = np.zeros(2)
 
@@ -142,10 +143,10 @@ class Stepper:
         return x
 
     # ---- control -----------------------------------------------------------
-    def begin_step(self, k, target_origin_xy):
+    def begin_step(self, k, target_origin_xy, duration=None):
         p0 = self.foot_origin(k)
         self.swing = dict(leg=k, p0=p0, p1=np.array([target_origin_xy[0], target_origin_xy[1], p0[2]]),
-                          t=0.0)
+                          t=0.0, dur=STEP_T if duration is None else duration)
         self.ik_target[k] = np.array([self.d.qpos[a] for a in self.qadr[k]], dtype=float)
         self.stance = "L" if k == "R" else "R"
 
@@ -182,7 +183,7 @@ class Stepper:
         xi = self.capture_point()
         tgt = self.r.target.copy()
 
-        if self.swing is None:
+        if self.swing is None and self.trigger_enabled:
             both_ok = self.support_outline_contains(xi, ["L", "R"])
             if not both_ok:
                 k, p1 = self.plan_step(xi)
@@ -191,7 +192,7 @@ class Stepper:
         if self.swing is not None:
             s = self.swing
             s["t"] += dt
-            u = min(1.0, s["t"] / STEP_T)
+            u = min(1.0, s["t"] / s["dur"])
             su = u * u * (3 - 2 * u)
             p = s["p0"] + su * (s["p1"] - s["p0"])
             p[2] = s["p0"][2] + STEP_H * np.sin(np.pi * u)
@@ -208,10 +209,16 @@ class Stepper:
         else:
             e = self.com() - self.foot_origin(self.stance)[:2]
         ev = self.cd if self.stance == "both" else self.cd
-        cmd = {n: self.cfg["sign"] * (self.cfg["kc"] * e[0] + self.cfg["kv"] * ev[0]) for n in B.ANKLE_PITCH}
+        fb = self.cfg["sign"] * (self.cfg["kc"] * e[0] + self.cfg["kv"] * ev[0])
         hip = self.cfg["hip_sign"] * self.cfg["kh"] * self.r.pitch_rad()
-        for n in B.HIP_PITCH:
-            cmd[n] = hip
+        if self.stance == "both":
+            cmd = {n: fb for n in B.ANKLE_PITCH}
+            for n in B.HIP_PITCH:
+                cmd[n] = hip
+        else:   # round 11: single support drives the stance leg only; the swing leg keeps its IK targets
+            ank, hipn = (("J04_ANKLE_PITCH_L", "J00_HIP_PITCH_L") if self.stance == "L"
+                         else ("J10_ANKLE_PITCH_R", "J06_HIP_PITCH_R"))
+            cmd = {ank: fb, hipn: hip}
         for n, delta in cmd.items():
             tgt[self.r.idx[n]] = self.r.target[self.r.idx[n]] + delta
         # the swing leg keeps its IK targets (already written above); stance legs use tgt as well
