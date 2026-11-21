@@ -304,3 +304,11 @@ By the rule, **W_POST=0.05 (other settings as the base) is selected.** Next (dec
 **Status after round 7:** Stage A is not passed by this configuration. Round 7 selected W_POST=0.05 on tuning seeds 125–129, and the held-out run on 130–134 fails on seed 130. Seeds 135 and above are unused, and no further tuning has been done on the held-out seeds.
 
 **Tuning round 8 (declared before any run; tuning seeds 135–139, never used; target: the −x 100 N push).** Base: unilateral model (`FOOT_RIGID=0`, `NORMAL_INEQ=1`), `W_FOOT=50`, `W_ORI=20`, CoM −0.07 m. Grid: (a) base, `W_POST=0.05`; (b) `W_POST=0.02`; (c) `W_POST=0.05, W_COM=30`; (d) `W_POST=0.05, W_ORI=30`. Selection rule (same as rounds 2–7): keep configurations that hold all 16 pushes on every tuning seed with no falls and quiet standing ok; among those, lowest maximum final quiet tilt. Then one run of the selected configuration on unused held-out seeds 140–144, with no further tuning. Seeds 125–134 are not used for selection. Seed 130 failed the round-7 held-out check and is not re-tuned against.
+
+**Tuning round 8 results (seeds 135–139; `r8_a.json`–`r8_d.json`, git-ignored).**
+- (a) W_POST=0.05: 16/16 on every seed, no falls; max final quiet tilt 0.028°.
+- (b) W_POST=0.02: falls the rule (15/16 on seeds 135, 136, 139; −x 75 N min).
+- (c) W_POST=0.05, W_COM=30: falls the rule (15/16 on seeds 135, 136, 139).
+- (d) **W_POST=0.05, W_ORI=30: 16/16 on every seed, no falls; max final quiet tilt 0.019°.**
+
+By the rule (lowest maximum quiet tilt among configurations that pass all pushes), **(d) W_ORI=30, W_POST=0.05 is selected** (tilt 0.019° vs 0.028° for (a)). Next (declared): one run of (d) on unused held-out seeds 140–144, with no further tuning. That run is the verdict for this round.
