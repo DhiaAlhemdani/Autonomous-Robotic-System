@@ -1,0 +1,43 @@
+# CI for the development-environment skeleton (docs/03 §5).
+# Job 1: static checks, no Docker needed.
+# Job 2: pins the base image and builds it, proving the Dockerfile works from a clean checkout.
+name: skeleton
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  static:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install PyYAML
+        run: python -m pip install --quiet pyyaml
+      - name: Run skeleton checks
+        run: ./scripts/check_skeleton.sh
+      - name: Install Stage 0 test dependencies (pinned)
+        run: python -m pip install --quiet numpy==1.26.4 scipy==1.13.1 pytest==8.3.3 casadi==3.6.7
+      - name: Stage 0 unit tests
+        run: PYTHONPATH=planning python -m pytest -q planning/tests
+
+  build-base:
+    needs: static
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pin base image and ROS apt source
+        run: ./scripts/pin_base_digest.sh
+      - name: Build base image
+        run: docker compose build base
+      - name: Smoke-test ROS 2 inside the image
+        run: |
+          # Login shell (bash -lc), as used by the compose commands: ros2 must be on PATH without sourcing
+          docker compose run --rm --entrypoint bash base -lc \
+            'command -v ros2 && ros2 pkg list | grep -qx rclpy && whoami | grep -qx robot'
