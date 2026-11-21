@@ -24,7 +24,8 @@ The `docs/17` values put the CoM height and the support box in the wrong place. 
 - Heading `psi(t) = w t`. Reference CoM (closed form): for `w != 0`, `p(t) = (v/w)(sin(wt), 1 - cos(wt))`; for `w = 0`, `p(t) = (vt, 0)`. Reference height `Z_NOM`.
 - Gait: unchanged from `docs/17` (period 0.9 s, stance 0.6 s, feet offset by half a period).
 - Placement: each stance is placed at the sole centre `p(t_mid) + R(psi(t_mid)) (0, ±FOOT_Y)`, with yaw `psi(t_mid)`. The sole centre is the support-box centre. The foot origin is `sole centre − R(psi)(FOOT_OFFSET_X, 0)` for the whole-body layer.
-- Declared properties (tests): feet alternate; same-foot step length `<= STEP_MAX = 0.5 m` (ASSUMPTION); lateral separation of the two sole centres `= 2 FOOT_Y ± 1 mm`, and yaw of each placement matches `psi` at its mid-stance time.
+- Declared properties (tests): feet alternate; same-foot step length `<= STEP_MAX = 0.5 m` (ASSUMPTION); each sole centre's lateral offset from the CoM reference at its mid-stance time is `±FOOT_Y ± 1 mm`; yaw of each placement matches `psi` at its mid-stance time.
+- Amendment (made before the tests were run): the wording "lateral separation of the two sole centres = 2 FOOT_Y" was replaced by the per-foot lateral offset above. The two feet are placed at different times, so a same-time separation is not the quantity the plan defines.
 
 ## 3. Swing-leg control
 
@@ -83,6 +84,59 @@ The `docs/17` values put the CoM height and the support box in the wrong place. 
 - No robustness claim against model mismatch, sensor noise, or terrain.
 - Solver failures are counted and reported, not diagnosed in this document.
 
-## 9. Results
+## 9. Results (sandbox, simulation only)
 
-_To be filled in after implementation, with the commit and exact outputs._
+Implementation: `planning/legged_nmpc/` (config, model, controller, sim, wbik). Tests: `planning/tests/test_legged_nmpc.py`. Sweep: `python -m planning.legged_nmpc.sim`, output `runs/legged_nmpc_sweep_{tuning,heldout}.json` (git-ignored).
+
+**Corrections made to `docs/17` results.** The old `docs/17` §9 numbers used the wrong support box and CoM height. Those numbers are superseded. The new `docs/17` tests (standing, walking) were rerun with the corrected constants below. The old sweep JSON was overwritten by the rerun. The old numbers remain only in `docs/17` §9.
+
+**Whole-body envelope (before the sweep, on the default pose).** The IK required a posture term and a task weight to converge. Final setting: task rows weighted 10, posture row weighted 0.05 toward a bent-knee nominal posture, damped least squares (λ = 1e-2) with a 0.2 rad step cap. Measured results at fixed poses (feet at y = ±0.121, with dx = forward offset of the second foot):
+
+| CoM height | dx | CoM residual | Foot residual | Clamps |
+|---|---|---|---|---|
+| 0.9536 (measured nominal) | 0.00 | 0.1 mm | 0.6 mm | 0 |
+| 0.9536 | 0.15 | 1.1 mm | 0.8 mm | 0 |
+| 0.9536 | 0.25 | 6.0 mm | 19.7 mm | 0 |
+| 0.93 | 0.00 | 1.3 mm | 9.4 mm | 396 |
+| 0.90 | 0.00 | 390 mm | 1.15 m (diverged) | 1072 |
+
+The layer converges at the measured height for forward offsets up to about 0.15 m, and it does not converge at 0.93 m or lower. This is an IK limit, not a physical one. The CoM was not lowered to get reach. A 0.93 m walking height is not claimed.
+
+**Tests (§6).**
+
+| Test | Result |
+|---|---|
+| 0. Vendor constants (mass, Z_NOM, FOOT_Y, FOOT_OFFSET_X, IZ) | pass |
+| 1. Discrete model matches ODE (1e-9) | pass |
+| 2. Standing: final CoM error < 1 mm after 3 s (`docs/17`) | **FAIL: 3.7 mm** |
+| 3. Walking 0.3 m/s: windowed mean velocity error < 0.02 m/s (`docs/17`) | pass |
+| 4. Yaw tracking: heading error < 0.05 rad over the last 5 s | pass |
+| 5. Footstep properties (alternation, step ≤ 0.5 m, lateral ±FOOT_Y ± 1 mm, yaw at mid-stance) | pass |
+| 6. Swing properties (endpoints, z ≥ 0, max z = SWING_H) | pass |
+| 7. Whole-body: CoM residual < 5 mm and stance residual < 5 mm (walk v = 0.25, w = 0.2) | **FAIL: CoM 6.6 mm** (stance residual not reached; the test stops at the first failed assert) |
+| 8. Determinism | pass |
+| 9. Applied forces within friction and bounds | pass |
+
+**Seeded sweep (§7), run once, no tuning.** Scenes drawn from each seed (speed in [0.1, 0.4] m/s, yaw rate in [-0.2, 0.2] rad/s, offset ±0.02 m, push 0–60 N for 0.2 s at 3 s, 10 s episode).
+
+| Metric | Tuning 0–9 | Held-out 10–19 | Declared limit |
+|---|---|---|---|
+| Solver failures (infeasible-step fraction) | 1 (0.0005) | 1 (0.0005) | reported |
+| ZMP violation max | 0 m | 0 m | — |
+| Friction violation max | 3.6e-8 N | 2.0e-8 N | IPOPT tolerance |
+| Windowed velocity error (mean) | 0.0014 m/s | 0.0015 m/s | — |
+| Heading error, last 5 s (mean) | 0.0005 rad | 0.0005 rad | < 0.05 rad (test 4) |
+| Max CoM deviation from reference | 0.059 m | 0.051 m | — |
+| Fraction of steps within 0.1 m | 1.00 | 1.00 | — |
+| CoM residual max (whole-body, after 1 s) | 8.4 mm | 9.0 mm | **5 mm: FAIL** |
+| Stance-foot residual max | 15.0 mm | 14.4 mm | **5 mm: FAIL** |
+| Swing-foot residual max | 8.6 mm | 8.7 mm | not declared |
+| Joint clamp events (all IK iterations) | 217 | 0 | reported |
+| Solve p50 (median over episodes) | 0.12 s | 0.11 s | sandbox |
+| IK p50 (median over episodes) | 37 ms | 37 ms | sandbox |
+
+**What this does not show.**
+- The whole-body layer does not meet its declared 5 mm residual limit in the walking sweep. Walking with yaw is not reference-tracking-clean at the joint level.
+- Solver failures remain undiagnosed, as in `docs/17`.
+- The plant is the reduced model plus kinematic whole-body. No torque, dynamic, collision, or hardware claim. The 0.9536 m CoM height is kinematically reachable only for forward offsets up to about 0.15 m.
+- Solve and IK times are sandbox measurements.
