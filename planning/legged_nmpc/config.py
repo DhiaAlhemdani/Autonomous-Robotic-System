@@ -33,6 +33,7 @@ class LeggedNMPCConfig:
     Q_TERM: float = 10.0      # terminal weight multiplier (ASSUMPTION)
     R_F: float = 1e-5         # force weight, per N^2 (ASSUMPTION)
     max_iter: int = 300       # IPOPT iteration limit per solve (ASSUMPTION)
+    nmpc_every: int = 2       # control ticks per NMPC solve (ASSUMPTION; QP runs every tick, see docs/18 §10.4)
     ipopt_tol: float = 1e-6   # IPOPT tolerance (ASSUMPTION; default 1e-8 was not needed for the reference tracking)
 
     @property

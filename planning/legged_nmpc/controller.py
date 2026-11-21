@@ -90,8 +90,11 @@ class LeggedNMPC:
         Ug[2, :] = Ug[5, :] = self.cfg.MASS * self.cfg.G / 2.0
         return Xg, Ug
 
-    def solve(self, t0, x_now, v, w, gait="walk"):
-        """Solve from time t0 with the measured state. Returns (u0, ok, elapsed_s)."""
+    def solve(self, t0, x_now, v, w, gait="walk", shift=1):
+        """Solve from time t0 with the measured state. Returns (u0, ok, elapsed_s).
+
+        shift: stages elapsed since the previous solve (warm-start shift on the dt grid).
+        """
         c, N = self.cfg, self.cfg.N
         n, off, lbu, ubu, rf = stage_data(c, t0, v, w, gait)
         ref = reference(c, t0, v, w, gait)
@@ -104,7 +107,7 @@ class LeggedNMPC:
         o.set_value(self.Poff, off.T)
         o.set_value(self.Rf, rf.T)
 
-        Xg, Ug = self._shifted_guess() if self._prev is not None else self._initial_guess(x_now)
+        Xg, Ug = self._shifted_guess(shift) if self._prev is not None else self._initial_guess(x_now)
         o.set_initial(self.X, Xg)
         o.set_initial(self.U, Ug)
 
@@ -124,6 +127,9 @@ class LeggedNMPC:
         self._prev = (np.asarray(Xs), np.asarray(Us))
         return np.asarray(Us)[:, 0].copy(), ok, elapsed
 
-    def _shifted_guess(self):
+    def _shifted_guess(self, shift=1):
         Xp, Up = self._prev
-        return np.hstack([Xp[:, 1:], Xp[:, -1:]]), np.hstack([Up[:, 1:], Up[:, -1:]])
+        s = min(max(int(shift), 1), Xp.shape[1] - 1)
+        Xg = np.hstack([Xp[:, s:]] + [Xp[:, -1:]] * s)
+        Ug = np.hstack([Up[:, s:]] + [Up[:, -1:]] * s)
+        return Xg, Ug

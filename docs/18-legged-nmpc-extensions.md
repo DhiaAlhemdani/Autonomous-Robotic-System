@@ -216,3 +216,15 @@ Results after the change (single runs unless stated):
 Not verified: the wall-clock timing of the viewer on the user's laptop. In the sandbox the headless 3 s run takes about 6 s wall, of which about 3 s is model build and startup. This is not a real-time claim.
 
 Trade-off: smoother simulation, but the walking attempt is worse and the horizon no longer covers a full gait cycle. Recovering walking may need a longer horizon at a lower control rate, or warm-start changes. Not attempted.
+
+## 10.4 NMPC at a lower rate than the QP
+
+Change: the NMPC solves every `nmpc_every` = 2 control ticks (0.1 s); the QP runs every 0.05 s tick. Between solves the walker uses the reference from the last solve's prediction (stage `ticks_since_solve + 1`). The warm start is shifted by the number of ticks since the last solve. Horizon N=16 (0.8 s), `ipopt_tol` 1e-6, as in §10.3.
+
+Results (single runs, sandbox, MuJoCo 3.2.3):
+- Standing v=0, 3 s: no fall, 60 QP solves, CoM xy error 0.8 mm, 0 NMPC failures.
+- Walking v=0.2 m/s, 6 s: falls at 2.14 s with 4 NMPC failures (43 QP solves). Previous: 1.40 s with NMPC every tick at N=16 (§10.3), 1.66 s at N=24 (§10.2). The walking test still fails.
+- `planning/tests/test_walk_qp.py`: 2 passed, 1 failed (walking, expected).
+- `planning/tests/test_legged_nmpc.py`: 8 passed, 2 failed (tests 2 and 7, the same declared-limit misses).
+
+Not verified: viewer smoothness on the user's laptop; the cause of the 4 NMPC failures during the walk (likely the reference moving faster than the solve period, not tested).

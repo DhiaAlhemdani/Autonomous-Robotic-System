@@ -47,7 +47,7 @@ class QPWalker:
     """One NMPC + QP walking run, stepped by the caller. Attributes after each tick: fell, k, stat_fail, log."""
 
     def __init__(self, v=0.0, w=0.0, gait=None, push=None, push_t=None, push_dur=0.2, kc=10.0, dc=4.0,
-                 ka=40.0, da=8.0, kf=100.0, df=20.0, kp_post=60.0, kd_post=6.0, log_every=0.5):
+                 ka=40.0, da=8.0, kf=100.0, df=20.0, kp_post=60.0, kd_post=6.0, log_every=0.5, nmpc_every=None):
         cfg = LeggedNMPCConfig()
         self.cfg = cfg
         self.fw, self.qp, self.act, self.q_stand = build(cfg)
@@ -62,6 +62,9 @@ class QPWalker:
         self.dt_ctrl = cfg.dt
         self.sub = int(round(self.dt_ctrl / self.m.opt.timestep))
         self.log_every = log_every
+        self.nmpc_every = max(1, int(nmpc_every if nmpc_every is not None else cfg.nmpc_every))
+        self.k_solve = None          # tick index of the last NMPC solve
+        self.Xp = None               # its predicted states (8 x N+1)
         self.k = 0
         self.stat_fail = 0
         self.fell = False
@@ -85,10 +88,16 @@ class QPWalker:
         R = d.xmat[1].reshape(3, 3)
         x[6] = np.arctan2(R[1, 0], R[0, 0])
         x[7] = d.qvel[5]
-        u, ok, _ = self.nmpc.solve(t, x, self.v, self.w, self.gait)
-        self.stat_fail += 0 if ok else 1
-        Xp = self.nmpc._prev[0]
-        com_ref, vel_ref, psi_ref = Xp[0:3, 1], Xp[3:6, 1], Xp[6, 1]
+        if self.k_solve is None or self.k - self.k_solve >= self.nmpc_every:
+            shift = self.k - self.k_solve if self.k_solve is not None else 1
+            u, ok, _ = self.nmpc.solve(t, x, self.v, self.w, self.gait, shift=shift)
+            self.stat_fail += 0 if ok else 1
+            self.Xp = self.nmpc._prev[0]
+            self.k_solve = self.k
+        # Stage j of the last solve is j*dt after its solve time; tick k is (k - k_solve) ticks after it.
+        j = min(self.k - self.k_solve + 1, self.Xp.shape[1] - 1)
+        Xp = self.Xp
+        com_ref, vel_ref, psi_ref = Xp[0:3, j], Xp[3:6, j], Xp[6, j]
         contacts = contact_state(cfg, t + self.dt_ctrl, self.v, self.w, self.gait)
         active = [bool(c[0]) for c in contacts]
         foot_acc = []
