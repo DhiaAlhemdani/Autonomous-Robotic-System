@@ -177,3 +177,16 @@ Added `BAL` in `fullsim.py` (off by default): CoM PD force mapped through the Co
 **Why this approach is wrong.** The base is unactuated and its motion comes from ground contact. Joint torques change the CoM and trunk attitude only through the contact forces at the feet. A correct controller must account for that. The standard formulation is a whole-body torque QP on the floating-base dynamics: choose contact forces (friction-cone constrained) and joint torques so that the base accelerates as desired. That is the next step if the balance work continues. It is not implemented.
 
 **Status.** No standing, no walking. The walk attempt in §10 stands as the result.
+
+## 10.2 Floating-base whole-body torque QP (full dynamics, simulation only)
+
+Implementation: `planning/legged_nmpc/wbc_qp.py` (OSQP 1.1.3; active-contact mask; corner friction MU 0.6; torque bounds; swing-foot task) and `planning/legged_nmpc/walk_qp.py` (NMPC-driven loop). Tests: `planning/tests/test_walk_qp.py`. MuJoCo 3.2.3.
+
+Results (single runs, not acceptance):
+- Standing, no push, 3 s: CoM xy error 0.75 mm (declared < 1 mm). 0 QP failures.
+- Standing push 30 N x, 0.2 s at t=1 s, 4 s run: CoM xy error 1.04 mm (declared < 2 mm). Earlier probe: 60 N y also recovers in about 1.5 s. Push timing differs from `docs/17` (t=3 s), not yet matched.
+- Walking v=0.2 m/s under NMPC reference, 3 s: falls at about 1.66 s in the 6 s run. Gain variants (kf/df, ka/da, kc/dc) fall between 1.03 and 2.42 s. First-step drift about 5 cm laterally, yaw diverges to about -1.45 rad, stance contacts drop to 3-5 points.
+
+Status: walking is NOT achieved. `test_walk_3s_upright` fails and is kept as a declared failure. Diagnosis of the first step (stance force vs friction, swing-foot targets, CoM reference feasibility, yaw sign) is the next step. Gain sweeps are not expected to fix it.
+
+§10.1 causal claim (base Jacobian zero for actuated joints) is still unverified; the attitude-identical trajectories may indicate a wiring fault in the torque path. Treat §10.1 as open.
