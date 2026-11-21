@@ -50,6 +50,7 @@ NORMAL_INEQ = 0.0            # 1.0: unilateral contact model (per-corner normal 
 KP_N, KD_N = 200.0, 30.0      # non-penetration gains for NORMAL_INEQ (ASSUMPTION, tuning)
 FOOT_RIGID = 1.0            # 1.0: feet fixed in orientation (default); 0.0: soft foot-flat task (tuning switch, round 5)
 FOOT_STAB = 0.0              # 1.0: rigid feet become stabilised (angular acc = KP_FOOT*e_flat - KD_FOOT*omega), so a rotating foot is driven flat and damped; 0.0: zero acceleration (default). Round 6 switch.
+FOOT_ANG_MAX = 0.0             # rad/s^2: bound on the stabilised foot acceleration command (0 = no bound, default). Round 10 switch (impact-time ankle strategy).
 
 
 class WBC:
@@ -187,6 +188,8 @@ class WBC:
                     e_flat = np.cross(Rk[:, 2], np.array([0.0, 0.0, 1.0]))
                     om = Jf[3:6] @ d.qvel
                     ang_des = KP_FOOT * e_flat - KD_FOOT * om
+                    if FOOT_ANG_MAX > 0.0:
+                        ang_des = np.clip(ang_des, -FOOT_ANG_MAX, FOOT_ANG_MAX)
                     rhs_eq.append(np.concatenate([-jdf[0:3], ang_des - jdf[3:6]]))
                 else:
                     rhs_eq.append(-jdf)
