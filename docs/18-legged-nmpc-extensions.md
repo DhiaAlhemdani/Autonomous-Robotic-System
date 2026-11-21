@@ -362,3 +362,17 @@ Results (walk v = 0.2 m/s, 6 s; standing 3 s):
 Interpretation: the strict priority levels are infeasible on about half of the walking ticks. The attitude and swing-foot targets cannot all be met together under the contact and friction model. The root cause is the task targets, not the cost weights. Priority is not adopted as default.
 
 Also fixed in this batch: the QP accepted OSQP results with status "primal infeasible" when the solution was finite. It now accepts only "solved" and "solved inaccurate". The weighted default's standing and walking results are unchanged by this.
+
+## 10.15 Priority infeasibility: which target (single batch per question)
+
+Each task was solved alone on every walking tick (walk v = 0.2 m/s, first 2 s): the attitude target and the swing-foot target are each achievable (residual at most 0.002 rad/s² and 0.000 m/s²). The attitude and foot pair is also feasible when solved together. The CoM target alone is feasible too.
+
+So the infeasibility comes from the priority sequence, not from any single target. Fixing each achieved value exactly is too strict:
+- Band width ±0.01 falls at 2.02 s with 41 fallback ticks. Band ±0.05 falls at 2.42 s with 48 fallback ticks. The band is not the cause.
+- Order attitude > foot: falls at 0.31 s. Without a CoM task the robot falls immediately.
+- Order attitude > foot > CoM: falls at 0.63 s, with 8 fallbacks and 3 failed solves.
+- Orders with CoM first (CoM > attitude > foot > posture; CoM > foot > attitude > posture): both fall at 1.89 s with 37 fallbacks.
+
+Interpretation: the CoM and posture levels become infeasible once higher levels are fixed exactly, at contact switches. The weighted cost can trade these off and the strict priority cannot. A correct hierarchy needs soft lower-priority levels (slack or inequality bands), not exact equalities. That is a design change. Not implemented; the default stays weighted.
+
+Status: walking not achieved.
