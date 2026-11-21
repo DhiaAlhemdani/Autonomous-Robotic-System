@@ -9,7 +9,7 @@ from dataclasses import dataclass
 @dataclass(frozen=True)
 class LeggedNMPCConfig:
     dt: float = 0.05          # s, step of the exact discretisation (ASSUMPTION)
-    N: int = 24               # stages, 1.2 s horizon (ASSUMPTION)
+    N: int = 16               # stages, 0.8 s horizon (ASSUMPTION; was 24 / 1.2 s, too slow for real time, see docs/18 §10.3)
     G: float = 9.81           # m/s^2
     MASS: float = 84.917      # kg, sum of body masses in vendor/t800 (measured)
     IZ: float = 1.7           # kg m^2, yaw inertia about the whole-body CoM (measured, docs/18 §4)
@@ -33,6 +33,7 @@ class LeggedNMPCConfig:
     Q_TERM: float = 10.0      # terminal weight multiplier (ASSUMPTION)
     R_F: float = 1e-5         # force weight, per N^2 (ASSUMPTION)
     max_iter: int = 300       # IPOPT iteration limit per solve (ASSUMPTION)
+    ipopt_tol: float = 1e-6   # IPOPT tolerance (ASSUMPTION; default 1e-8 was not needed for the reference tracking)
 
     @property
     def FX_MAX(self) -> float:

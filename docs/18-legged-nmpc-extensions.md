@@ -190,3 +190,29 @@ Results (single runs, not acceptance):
 Status: walking is NOT achieved. `test_walk_3s_upright` fails and is kept as a declared failure. Diagnosis of the first step (stance force vs friction, swing-foot targets, CoM reference feasibility, yaw sign) is the next step. Gain sweeps are not expected to fix it.
 
 §10.1 causal claim (base Jacobian zero for actuated joints) is still unverified; the attitude-identical trajectories may indicate a wiring fault in the torque path. Treat §10.1 as open.
+
+## 10.3 Real-time NMPC: horizon and tolerance
+
+Problem: the full-dynamics viewer ran at about 0.6x real time on a laptop. The NMPC (IPOPT, one solve per 50 ms control tick) took about 40 ms median and up to 81 ms at N=24, which is most of the tick budget. Physics and the QP together were under 0.5 s per 3 s run.
+
+Benchmark (sandbox, standing reference, 60 solves each, 0 failures):
+
+| Setting | p50 | max |
+|---|---|---|
+| N=24, default tol (before) | 40.5 ms | 81.0 ms |
+| N=24, tol 1e-6 | 34.7 ms | 77.3 ms |
+| N=16, default tol | 24.9 ms | 51.9 ms |
+| N=16, tol 1e-6 (now) | 24.1 ms | 33.6 ms |
+| N=12, tol 1e-6 | 19.6 ms | 34.9 ms |
+| N=8, tol 1e-6 | 13.7 ms | 17.6 ms |
+
+Change: `N` 24 -> 16 (horizon 1.2 s -> 0.8 s) and `ipopt_tol` 1e-6 added to `config.py` and used in `controller.py`. Horizon is the main lever; tolerance helps little.
+
+Results after the change (single runs unless stated):
+- Standing, no push, 3 s: CoM xy error 0.76 mm (was 0.75 mm). `test_walk_qp` standing and push tests pass.
+- Walking v=0.2 m/s, 6 s: falls at 1.40 s (was 1.66 s). The walking test still fails. The shorter horizon is shorter than the 0.9 s gait period, which is a likely cause, but not tested.
+- `planning/tests/test_legged_nmpc.py`: 8 passed, 2 failed (test 2 final CoM error 4.7 mm vs 1 mm; test 7 CoM residual 7.7 mm vs 5 mm). These are the same two declared-limit misses as before this change.
+
+Not verified: the wall-clock timing of the viewer on the user's laptop. In the sandbox the headless 3 s run takes about 6 s wall, of which about 3 s is model build and startup. This is not a real-time claim.
+
+Trade-off: smoother simulation, but the walking attempt is worse and the horizon no longer covers a full gait cycle. Recovering walking may need a longer horizon at a lower control rate, or warm-start changes. Not attempted.

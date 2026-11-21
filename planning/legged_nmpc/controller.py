@@ -76,7 +76,8 @@ class LeggedNMPC:
         J += c.Q_TERM * stage_cost(X[:, N] - Xref[:, N])
         o.minimize(J)
         o.solver("ipopt", {"print_time": False, "ipopt.print_level": 0, "ipopt.sb": "yes",
-                           "ipopt.max_iter": c.max_iter, "ipopt.warm_start_init_point": "yes"})
+                           "ipopt.max_iter": c.max_iter, "ipopt.tol": c.ipopt_tol,
+                           "ipopt.acceptable_tol": 10 * c.ipopt_tol, "ipopt.warm_start_init_point": "yes"})
         self.o, self.X, self.U = o, X, U
         self.x0, self.Xref, self.lbu, self.ubu = x0, Xref, lbu, ubu
         self.Pn, self.Poff, self.Rf = Pn, Poff, Rf
