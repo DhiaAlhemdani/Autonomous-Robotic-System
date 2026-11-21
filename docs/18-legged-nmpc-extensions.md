@@ -166,3 +166,14 @@ The gate in the project plan (walking blocked until standing passes) was lifted 
 **What this does not show.** No standing, no walking, no balance claim for the T800. The reduced NMPC never produced the forces that act on the robot; the full-dynamics loop uses only the IK joint targets derived from it. The `docs/17` NMPC forces are not applied through contact.
 
 **What would be needed.** A balance controller in joint space (CoM/attitude feedback with ankle and hip strategies, torque-aware), a foot-contact model that is verified before walking, and an explanation of the fixed-pose drift. These are the first steps before any walking experiment can be meaningful.
+
+### 10.1 Task-space balance attempt (Jacobian transpose): rejected
+
+Added `BAL` in `fullsim.py` (off by default): CoM PD force mapped through the CoM Jacobian, plus base attitude torque mapped through the base rotation Jacobian, both restricted to the actuated joints.
+
+- CoM feedback alone (KC 1500–6000 N/m, with attitude): the CoM still drifts forward, 5 cm by 0.6 s and 25 cm by 1.2 s. The robot falls.
+- Attitude feedback alone (KA 500–8000 N·m/rad): results are identical for every gain, so the term is zero. The base body's rotation Jacobian with respect to the actuated joints is zero, because those joints are children of the base. Joint torques cannot rotate the base in this formulation.
+
+**Why this approach is wrong.** The base is unactuated and its motion comes from ground contact. Joint torques change the CoM and trunk attitude only through the contact forces at the feet. A correct controller must account for that. The standard formulation is a whole-body torque QP on the floating-base dynamics: choose contact forces (friction-cone constrained) and joint torques so that the base accelerates as desired. That is the next step if the balance work continues. It is not implemented.
+
+**Status.** No standing, no walking. The walk attempt in §10 stands as the result.

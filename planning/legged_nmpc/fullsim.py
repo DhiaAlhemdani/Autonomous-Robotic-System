@@ -38,6 +38,12 @@ class FullWalk:
     # Ankle attitude feedback (ankle strategy): torque on ankle pitch/roll proportional to base pitch/roll.
     ATT_PITCH = 0.0   # N m per rad (set by experiments)
     ATT_ROLL = 0.0
+    # Task-space balance (Jacobian transpose), on the actuated leg and waist joints only.
+    BAL = False
+    KC = 1500.0       # N/m, CoM horizontal stiffness
+    DC = 300.0        # N s/m, CoM damping
+    KA = 500.0        # N m/rad, base roll/pitch stiffness
+    DA = 50.0         # N m s/rad, base roll/pitch damping
 
     def __init__(self, cfg=None, kp_scale=1.0, kd_scale=1.0):
         self.cfg = cfg or LeggedNMPCConfig()
@@ -133,6 +139,7 @@ class FullWalk:
                 q_des = q_start + alpha * (q_goal - q_start)
                 qd_des = (q_goal - q_start) / cfg.dt
                 roll, pitch = self._attitude()
+                tau_task = self._balance_torque(q_des) if self.BAL else np.zeros(len(self.dofs))
                 for k in range(len(self.dofs)):
                     qk = self.d.qpos[self.qadr[k]]
                     vk = self.d.qvel[self.dofs[k]]
@@ -142,6 +149,7 @@ class FullWalk:
                         tau += -self.ATT_PITCH * pitch
                     if "ANKLE_ROLL" in name:
                         tau += -self.ATT_ROLL * roll
+                    tau = tau + tau_task[k]
                     self.d.ctrl[self.act[k]] = float(np.clip(tau + self.d.qfrc_bias[self.dofs[k]],
                                                              -self.tlim[k], self.tlim[k]))
                 mujoco.mj_step(self.m, self.d)
@@ -156,6 +164,26 @@ class FullWalk:
                     com_res_max=float(np.max(ik_res)) if ik_res else None,
                     com_final=log[-1]["com"] if log else None, duration=log[-1]["t"] if log else 0.0,
                     log=log)
+
+    def _balance_torque(self, q_des):
+        """Torque on the actuated joints: CoM PD force through the CoM Jacobian, plus base attitude torque
+        through the base rotation Jacobian. The base is unactuated, so only the actuated columns are used."""
+        m, d = self.m, self.d
+        jp = np.zeros((3, m.nv))
+        mujoco.mj_jacSubtreeCom(m, d, jp, 1)
+        jr = np.zeros((3, m.nv))
+        mujoco.mj_jacBody(m, d, None, jr, 1)
+        mujoco.mj_subtreeVel(m, d)
+        com = d.subtree_com[0]
+        vcom = d.subtree_linvel[0]
+        # Horizontal CoM target: the stance centre (origin of the sole frame, x = y = 0).
+        F = np.array([-self.KC * com[0] - self.DC * vcom[0],
+                      -self.KC * com[1] - self.DC * vcom[1], 0.0])
+        roll, pitch = self._attitude()
+        omega = d.qvel[3:6]
+        M = np.array([-self.KA * roll - self.DA * omega[0], -self.KA * pitch - self.DA * omega[1], 0.0])
+        tau_full = jp[:, self.dofs].T @ F + jr[:, self.dofs].T @ M
+        return tau_full
 
     def _attitude(self):
         R = self.d.xmat[1].reshape(3, 3)
