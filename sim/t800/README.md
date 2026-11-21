@@ -414,3 +414,10 @@ So the balance law holds the −x 100 N push on every seed where quiet standing 
 - `planning/tests`: 53 passed (after installing `osqp` into the local virtualenv; not a repo change).
 - `scripts/check_t800_model.py`: OK (model loads, forward step runs; mass is the model value, not measured).
 - Headless viewer smoke (`sim/t800/viewer.py --headless --T 5`): runs and reports; final tilt 3.5°.
+
+**Declared round 11: single-support stance law (prerequisite for step adjustment; declared before any code is written or run).**
+- Motive: `stepper.py` failed for two recorded reasons. The stance law has no single-support mode (its reference is the midpoint of both feet), and a forced in-place swing falls even with no step.
+- Design: when one foot is in the air, the stance law uses the stance foot origin (xy) as the centre-of-mass reference, and applies the ankle feedback to the stance ankle only. Hip pitch is unchanged. In double support the law is the existing `balance.py` law (unchanged). The swing foot holds its start pose (no step).
+- Gate test (round 11): a zero-displacement swing of the left foot (start 1.0 s, duration 1.2 s, lift 0.04 m, pose held), no push, on tuning seeds **190–194** (never used). Pass criteria: no fall, final tilt < 5°, pelvis z > 0.8 m, for all five seeds.
+- If round 11 passes, round 12 is declared separately (capture-point step on tuning seeds 190–194, against −x 100 N), and the held-out run is on seeds 195–199. If round 11 fails, step adjustment is closed on this controller and the failure is recorded.
+- Scope: simulation only; no claim of walking, of balance under large pushes, or of hardware transfer. All step timings are ASSUMPTION values.
