@@ -351,3 +351,11 @@ A bounded foot correction does not stop the fall. The design is **refuted on thi
 - Seed 161: does **not** fall, but quiet standing settles at 7.5° (limit 5°). The push trials are then not valid for this seed (0/16).
 
 So the balance law holds the −x 100 N push on every seed where quiet standing is within limit. It fails only on a quiet-standing offset on seed 161. The settled tilt (3.1–7.5°) is a steady-state offset that depends on the start pose. My reading is that the balance law has no integral action on tilt, so the offset is not removed. That is a hypothesis, not yet tested. Stage A is not passed by this approach.
+
+**Declared test: integral action on the balance law for the seed-161 quiet-standing offset (declared before any run).**
+- Problem: the balance law (`balance.py`, `DEFAULT_CFG ki=0`) fails the 5° quiet-tilt limit on seed 161 (7.5°), the only failure in the 160–164 evaluation.
+- Hypothesis (from the earlier entry, not yet tested): the steady offset comes from having no integral term on the CoM error. The integral test is the only thing declared here. The earlier frontal-plane ankle-roll idea was never applied and is dropped.
+- Tuning seeds: **165–169** (never used by any controller). Grid, all other gains as in `DEFAULT_CFG`: `ki` ∈ {0.0 (control), 0.3, 1.0}. Quiet standing, 20 s, no pushes.
+- Selection rule: keep the values where every tuning seed is quiet-ok (no fall, final tilt < 5°, pelvis z > 0.8 m). Among those, choose the lowest maximum final tilt. Ties go to the smaller `ki`.
+- Then one full Stage A protocol run of the selected value on unused seeds **170–174**, with no further tuning. Seeds 160–164 are not used for selection, and seed 161 is not used for tuning.
+- Not part of this round: the CoP-projection idea from the WBC work. It is deferred because the active controller is now the balance law.
