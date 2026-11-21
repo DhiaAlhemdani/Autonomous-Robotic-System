@@ -349,3 +349,16 @@ Vertical target test, walk v = 0.2 m/s, 6 s (each variant in its own process):
 - Vertical target clamped to ±10 m/s²: falls 2.02 s.
 
 Neither the friction limit nor the vertical target explains the fall. Reverted: no controller change.
+
+## 10.14 Task-priority whole-body QP (single batch)
+
+Implemented in `wbc_qp.py` as a mode switch. `weighted` (default, unchanged) is the §10.2 cost. `priority` solves the tasks in order (attitude, swing foot, CoM, posture). After each level, its achieved acceleration is held in a band of ±1e-3 for the lower levels. If a priority level is infeasible, that tick falls back to the weighted solve, and the fallback is counted.
+
+Results (walk v = 0.2 m/s, 6 s; standing 3 s):
+- Weighted (default): standing 0.77 mm, falls at 2.02 s, 4 NMPC failures.
+- Priority, attitude first: standing 0.77 mm, falls at 1.90 s, 4 NMPC failures, 37 of 75 ticks fell back to weighted.
+- Priority, swing foot first: identical to attitude first (falls at 1.90 s, 37 fallbacks).
+
+Interpretation: the strict priority levels are infeasible on about half of the walking ticks. The attitude and swing-foot targets cannot all be met together under the contact and friction model. The root cause is the task targets, not the cost weights. Priority is not adopted as default.
+
+Also fixed in this batch: the QP accepted OSQP results with status "primal infeasible" when the solution was finite. It now accepts only "solved" and "solved inaccurate". The weighted default's standing and walking results are unchanged by this.
