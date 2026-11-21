@@ -259,3 +259,16 @@ Result, v = 0.2 m/s, 6 s:
 - Failure sequence: from about 0.85 s the stance contact drops to 1–2 points, the pelvis yaw diverges (−0.22 rad at 1.05 s, −1.0 rad at 1.15 s), and the robot falls. Yaw divergence was already seen in §10.2; it is now the first observed failure.
 
 Reverted, not kept as default. The lateral CoM is now feasible for the NMPC, so the next blocker is yaw and single-foot contact, not the lateral reference. Yaw control (through the floating-base QP and the stance friction authority) is the next thing to diagnose.
+
+## 10.8 Yaw and single-foot contact diagnosis (committed controller, v = 0.2 m/s)
+
+Single runs, no sweeps. Diagnostics were scripted and not committed.
+
+1. Yaw tracking: the QP realises the yaw attitude target closely (commanded vs achieved yaw acceleration agree within about 0.2 rad/s² in the first second). The yaw rate does oscillate (about ±0.3 to ±0.7 rad/s, with accelerations of ±2 to ±7 rad/s²) from about 0.2 s. Yaw authority is not the limit.
+2. Yaw gain: scaling only the yaw attitude target. Scale 1.0: falls 2.14 s, max |psi| 6.4°. Scale 0.25: falls 1.90 s, 4.1°. Scale 0: falls 1.80 s, 22°. Reducing yaw control does not prevent the fall, so the yaw loop is not the root cause.
+3. Stance ankle torques: the four ankle actuators peak at about 71 N·m against a 160 N·m limit. They do not saturate before the contact loss at 0.8–1.3 s.
+4. Contacts and roll: the pelvis roll grows to about 5° during single support, and the contact count drops to 1–2 points at about 0.85–1.2 s. This is consistent with the stance foot tilting onto an edge, but the cause of the roll is not yet identified.
+
+Not tested yet, next: the realised centre of pressure from the QP contact forces against the stance support box at 0.8–1.2 s. If it leaves the box, the roll is a support-geometry failure. If it stays inside, the roll comes from the floating-base dynamics and the attitude gains.
+
+Status: walking not achieved. The earlier candidate causes in docs/19 §6 are ruled in or out as follows: (1) yaw authority, ruled out; (2) swing yaw, not relevant at w = 0 (the swing yaw is constant); (3) posture coupling, not tested; (4) single-foot tilt, supported and not yet explained.
