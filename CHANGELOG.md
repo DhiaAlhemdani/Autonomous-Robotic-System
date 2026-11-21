@@ -2,6 +2,12 @@
 
 All notable changes to this design record. Format inspired by Keep a Changelog; the project is pre-implementation, so entries are design records rather than releases.
 
+## [Unreleased] — NMPC from scratch (planar mobile base)
+
+**Added:** `planning/nmpc/` (unicycle model, RK4, direct multiple shooting solved by IPOPT through CasADi, obstacle constraints with slack, warm start, closed-loop harness and seeded sweep), `planning/tests/test_nmpc.py` (5 tests), and `docs/16-nmpc-design.md` (design declared before code; results in §8). CI installs `casadi==3.6.7`.
+
+**Results:** 20/20 scenes reach the goal, no solver failures, obstacle clearance met. Simulation only; solve times are sandbox measurements. No code was taken from other repositories.
+
 ## [Unreleased] — All NMPC work removed
 
 **Removed:** `planning/stage0/` (planar NMPC, scenario, diagnosis, slack check, predictor, config and runner), `planning/tests/test_stage0.py`, `planning/tests/test_config_schema.py`, `sim/t800/planar_base.py` and its README section, `docs/13-stage0-report.md`, `planning/config_schema.py` (configuration schema for the removed planar controller). The NMPC infeasibility trigger and its reason code (`nmpc_infeasible`) are removed from `planning/safety/supervisor.py`, with its two tests. The removed code remains in git history.
