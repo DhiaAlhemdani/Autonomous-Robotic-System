@@ -368,3 +368,12 @@ So the balance law holds the −x 100 N push on every seed where quiet standing 
 - Reading: the integral term on CoM error does not remove the quiet offset, and at these gains it slightly increases it. The offset is not caused by a missing integrator. The seed-161 failure and the new seed-168 offset both remain open. The quiet offset is start-pose dependent and is not yet explained.
 - Caveat: this run used a 20 s quiet loop written for the tuning step, not the `wbc_eval.py` episode function, so the numbers may differ slightly from that protocol.
 - Stage A is not passed by the balance law. Seeds 165–174 have been partly used here; seeds 175 and up are unused.
+
+**Declared test: CoP guard on the balance law (declared before any code is written or run).**
+- Problem: quiet-standing offsets on seeds 161 (7.5°) and 168 (5.6°) under the balance law. The integral term does not help. The CoP guard tests whether the ankle feedback is pushing the centre of pressure past a sole edge and holding the lean there.
+- Design: estimate the centre of pressure (CoP) along x from the floor contact normal forces. The sole edges in world x are the mean foot-origin x plus `SOLE_X` (−0.110 heel, +0.157 toe; this is an approximation, because the feet tilt slightly). If the CoM error is forward (toward the toe) and the CoP is within `cop_margin` of the toe, the ankle feedback term is set to zero. The same applies backward toward the heel. This stops the ankle from adding more lean toward an edge that already limits the CoP. It is a heuristic guard, not a QP constraint.
+- Grid (all other gains as in `DEFAULT_CFG`, `ki=0`): `cop_margin` ∈ {0.0 (off, control), 0.02 m, 0.04 m}.
+- Tuning seeds: **175–179** (never used). Each seed: quiet standing (pass if no fall, final tilt < 5°, pelvis z > 0.8 m), and the −x 100 N push (pass if all pushes hold). Use `wbc_eval.py` `episode` with `--controller balance`, so the pass criteria are the official ones.
+- Selection rule: keep the values where every tuning seed passes both quiet standing and the −x 100 N push. Among those, choose the lowest maximum final tilt. Ties go to the smaller margin. If none passes, no held-out run.
+- Then one full Stage A protocol run of the selected value on unused seeds **180–184**, with no further tuning. Seeds 160–169 are not used for selection.
+- Scope: simulation only. A FAIL here closes this guard design on this controller.
