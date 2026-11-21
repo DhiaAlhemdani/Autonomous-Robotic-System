@@ -286,3 +286,27 @@ Tested: shrinking the ZMP support box by a margin (ZMP_MARGIN), so the planned C
 Interpretation: the CoP reaches the foot edge because the lateral CoM motion (committed y = 0 reference drifting to about −0.1 m, see §10.5) is not supported by the foot geometry. Narrowing the allowed region makes the NMPC infeasible or biased earlier. The lateral reference and the support geometry must be consistent first. That is the LIP reference of §10.7, which tracks but still fails at 1.2 s by roll. The remaining gap is the roll of the stance foot with one or two contacts, which this run does not explain.
 
 Status: walking not achieved. Standing and push-standing remain the only gates passed (docs/19 §7).
+
+## 10.10 Combined variant batch (single batch, each variant in its own process)
+
+Walk: v = 0.2 m/s, 6 s. Stand: v = 0, 3 s (CoM xy error in mm; gate G0 is < 1 mm). Single runs, no seed sweeps. Variants are applied as overrides in the batch script (not committed): LIP lateral reference (§10.7), ZMP support margin 0.02 m (§10.9), posture-acceleration scale (kp and kd together), yaw attitude-acceleration scale.
+
+| Variant | Walk | t_end s | NMPC fail | QP infeasible | Stand 3 s | Stand CoM xy mm |
+|---|---|---|---|---|---|---|
+| A committed | fell | 2.14 | 4 | 0 | ok | 0.77 |
+| B LIP ref | fell | 1.23 | 0 | 0 | ok | 0.77 |
+| C LIP + margin 0.02 | fell | 1.32 | 1 | 0 | ok | 0.77 |
+| D committed + posture x0 | fell | 1.56 | 5 | 0 | ok | 6.21 |
+| E LIP + posture x2 | fell | 2.17 | 3 | 0 | ok | 0.81 |
+| F LIP + posture x0 | fell | 1.24 | 2 | 0 | ok | 6.21 |
+| G LIP + yaw attitude x0 | fell | 1.50 | 0 | 2 | ok | 0.77 |
+| H LIP + margin + posture x2 | fell | 1.39 | 4 | 0 | ok | 0.81 |
+
+Findings:
+- No variant walks. The best (E, 2.17 s) is within noise of A (2.14 s).
+- Posture gain is needed for standing accuracy: with posture x0 the standing CoM error is 6.2 mm, failing gate G0. Keep posture at x1 or higher.
+- The LIP reference removes NMPC failures (B, F, G) but does not prevent the fall.
+- The ZMP margin does not help (C, H).
+- Yaw attitude gain is not the cause (G falls at 1.50 s, earlier than A).
+
+Status: walking not achieved. The next diagnosis is the roll of the stance foot with one or two contacts (§10.9), which none of these variants addresses.
