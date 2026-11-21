@@ -19,6 +19,16 @@ Contents:
 
 Options: `--push-x`, `--push-y` (N), `--push-t` (start, s), `--push-dur` (s, default 0.2), `--T` (stop after T s). Closing the window ends the run. Stop with Ctrl+C or `--T`.
 
+Controller mode (NMPC + whole-body QP, `docs/18` §10.2; not a validated walking or balance result):
+
+```
+.venv/bin/python sim/t800/viewer.py --controller qp --v 0            # standing, in the window
+.venv/bin/python sim/t800/viewer.py --controller qp --v 0.2          # walking attempt; falls ~1.7 s
+.venv/bin/python sim/t800/viewer.py --controller qp --v 0 --headless --T 3
+```
+
+Options `--v` (m/s) and `--w` (rad/s) set the reference. The controller stops at a fall and the robot is then passive. The window path was not run in the sandbox (no X server); the headless path was.
+
 Headless check (no window, runs anywhere): `.venv/bin/python sim/t800/viewer.py --headless --T 3`. The pelvis drops from 0.87 m within about 1 s, which is the expected passive behaviour.
 
 ## Linux laptop: viewer in a container (X11)

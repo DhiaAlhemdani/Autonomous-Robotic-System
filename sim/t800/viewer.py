@@ -1,4 +1,7 @@
-"""Free-base T800 in MuJoCo with an optional 3D window. No controller: the robot is passive.
+"""Free-base T800 in MuJoCo with an optional 3D window.
+
+Default: no controller, the robot is passive. --controller qp runs the NMPC + whole-body QP walker
+(planning/legged_nmpc/walk_qp.py, docs/18 §10.2) on the same model with a floor, at --v and --w.
 
 The model is the vendored upstream model (vendor/t800), with a floor added. Starting from the
 model's default pose, the robot falls under gravity. Pushes are horizontal forces on the pelvis.
@@ -6,11 +9,13 @@ model's default pose, the robot falls under gravity. Pushes are horizontal force
     python sim/t800/viewer.py                          # 3D window
     python sim/t800/viewer.py --push-x -150 --push-t 5 # 150 N backward push at 5 s
     python sim/t800/viewer.py --headless --T 10        # no window; status printed every second
+    python sim/t800/viewer.py --controller qp --v 0    # NMPC + QP standing, in the window
+    python sim/t800/viewer.py --controller qp --v 0.2  # NMPC + QP walking attempt (falls ~1.7 s)
 
 Pushes are held for --push-dur seconds (default 0.2 s). The window runs at real time, which is
 the simulation rate, not a measurement. Closing the window ends the run.
 
-Simulation only. Nothing here is a controller or a balance claim.
+Simulation only. The QP walker is not a validated walking or balance result; see docs/18 §10.2.
 """
 import argparse
 import math
@@ -45,6 +50,78 @@ def tilt_deg(d):
     return math.degrees(math.acos(max(-1.0, min(1.0, zz))))
 
 
+def run_qp(args):
+    """Drive planning/legged_nmpc/walk_qp.QPWalker one physics step at a time (headless or in the window)."""
+    if REPO not in sys.path:
+        sys.path.insert(0, REPO)
+    from planning.legged_nmpc.walk_qp import QPWalker
+
+    push = [args.push_x, args.push_y, 0.0] if (args.push_x or args.push_y) else None
+    walker = QPWalker(v=args.v, w=args.w, push=push, push_t=args.push_t, push_dur=args.push_dur)
+    m, d = walker.m, walker.d
+    print(f"controller: NMPC + QP walker, v={args.v} m/s, w={args.w} rad/s, gait={walker.gait}", flush=True)
+    dt = m.opt.timestep
+    t_stop = args.T if args.T else float("inf")
+    state = {"last": -1, "fell_reported": False}
+
+    def status():
+        print(f"t={d.time:6.2f} s  pelvis z={d.qpos[2]:.3f} m  tilt={tilt_deg(d):5.1f} deg  "
+              f"contacts={int(d.ncon)}  active={walker.active}", flush=True)
+
+    def tick_once():
+        """One control tick (plan + sub physics steps). Returns False when the run should end."""
+        if walker.fell or d.time >= t_stop:
+            return False
+        walker.plan_and_actuate()
+        for _ in range(walker.sub):
+            if walker.substep():
+                break
+        walker.log_tick()
+        if int(d.time) != state["last"]:
+            state["last"] = int(d.time)
+            status()
+        if walker.fell and not state["fell_reported"]:
+            state["fell_reported"] = True
+            print(f"fell at t={d.time:.3f} s (controller stops; robot is then passive)", flush=True)
+        return True
+
+    if args.headless:
+        n = walker.n_ticks(t_stop if args.T else 10.0)
+        for _ in range(n):
+            if not tick_once():
+                break
+        status()
+        return
+
+    if not os.environ.get("DISPLAY"):
+        print("no DISPLAY: 3D window not opened (use scripts/run_viewer.sh, or --headless)", flush=True)
+        sys.exit(1)
+
+    from mujoco import viewer as mviewer
+
+    wall0 = time.perf_counter()
+    try:
+        with mviewer.launch_passive(m, d) as viewer:
+            print("3D window: open (closing it ends the run)", flush=True)
+            while viewer.is_running():
+                if walker.fell:
+                    # Controller has stopped: keep stepping passively so the fall stays visible until the window closes.
+                    d.ctrl[:] = 0.0
+                    for _ in range(walker.sub):
+                        walker.substep()
+                elif d.time >= t_stop:
+                    break
+                else:
+                    tick_once()
+                viewer.sync()
+                ahead = d.time - (time.perf_counter() - wall0)
+                if ahead > 0:
+                    time.sleep(ahead)
+            print("3D window closed; run ended.", flush=True)
+    except KeyboardInterrupt:
+        print("stopped (Ctrl+C)", flush=True)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--T", type=float, default=0.0, help="stop after T seconds (0 = until Ctrl+C)")
@@ -53,7 +130,13 @@ def main():
     ap.add_argument("--push-t", type=float, default=5.0, help="push start time (s)")
     ap.add_argument("--push-dur", type=float, default=0.2, help="push duration (s)")
     ap.add_argument("--headless", action="store_true", help="no 3D window; print status every second")
+    ap.add_argument("--controller", choices=["none", "qp"], default="none", help="qp = NMPC + whole-body QP walker")
+    ap.add_argument("--v", type=float, default=0.0, help="forward speed for --controller qp (m/s)")
+    ap.add_argument("--w", type=float, default=0.0, help="yaw rate for --controller qp (rad/s)")
     args = ap.parse_args()
+
+    if args.controller == "qp":
+        return run_qp(args)
 
     m = build()
     d = mujoco.MjData(m)
