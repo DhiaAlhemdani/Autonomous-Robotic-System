@@ -33,7 +33,6 @@ The EU Machinery Regulation (EU) 2023/1230 applies from **20 January 2027** and 
 | [`docs/10-industry-case-study.md`](docs/10-industry-case-study.md) | Industry case study: eleven well-known robotics companies (Clearpath, MiR, Boston Dynamics, ANYbotics, Unitree, Agility, Franka, Universal Robots, Tesla Optimus, Figure AI, Amazon Robotics) on capabilities, limitations, controllers, motors, drivers, simulation, and comparison with our theory; 97 sources, with each value tagged primary, secondary, company claim, not published or conflicting |
 | [`docs/11-scope-change-humanoid.md`](docs/11-scope-change-humanoid.md) | Change record: humanoid platform (T800 decided, §7), wider operating domain, open decisions |
 | [`docs/12-public-humanoid-projects.md`](docs/12-public-humanoid-projects.md) | Survey of public humanoid projects to build on, with licences marked as checked or not checked |
-| [`docs/13-stage0-report.md`](docs/13-stage0-report.md) | Stage 0 report: constant-velocity NMPC in simulation; sandbox measurements; not hardware results |
 | [`docs/00-mission-and-scope.md`](docs/00-mission-and-scope.md) | Problem statement, mission scenarios, frontier problems, scope discipline |
 | [`docs/01-requirements.md`](docs/01-requirements.md) | Numbered functional and non-functional requirements with verification methods |
 | [`docs/02-system-architecture.md`](docs/02-system-architecture.md) | Layered architecture, rates, interfaces, ROS 2 graph, compute allocation, degradation ladder |
@@ -45,7 +44,7 @@ The EU Machinery Regulation (EU) 2023/1230 applies from **20 January 2027** and 
 
 ## Python environment
 
-One shared virtual environment, `.venv`, at the repository root serves every Python check (the T800 viewer, Stage 0 tests). It is gitignored by `.venv*/`.
+One shared virtual environment, `.venv`, at the repository root serves every Python check (the T800 viewer, the planning tests). It is gitignored by `.venv*/`.
 
 ```
 python3 -m venv .venv                      # once; on Ubuntu/Debian: sudo apt install python3-venv

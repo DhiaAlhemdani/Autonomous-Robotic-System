@@ -11,9 +11,9 @@ GOOD_CMD = (0.8, 0.0, 0.1)
 
 
 def inp(t=0.0, cmd=GOOD_CMD, cmd_time=None, dist=5.0, sensors=True, sigma=0.02,
-        solve=True, estop=False, hb=True):
+        estop=False, hb=True):
     return Inputs(t=t, cmd=cmd, cmd_time=t if cmd_time is None else cmd_time, nearest_dist=dist,
-                  sensors_ok=sensors, loc_sigma=sigma, solve_ok=solve, estop=estop, heartbeat_ok=hb)
+                  sensors_ok=sensors, loc_sigma=sigma, estop=estop, heartbeat_ok=hb)
 
 
 def test_nominal_passes_command_through():
@@ -48,21 +48,6 @@ def test_command_never_exceeds_limit_or_grows():
     vx, vy, wz = out.cmd
     assert (vx * vx + vy * vy) ** 0.5 <= out.speed_limit + 1e-12
     assert abs(vx) <= 1.0 and wz == 0.2   # yaw rate is not scaled by the distance limit here
-
-
-def test_infeasible_run_triggers_protective_stop():
-    s = Supervisor()
-    for k in range(P.infeasible_max - 1):
-        assert s.step(inp(t=0.01 * k, solve=False)).state != State.PROTECTIVE_STOP
-    out = s.step(inp(t=0.03, solve=False))
-    assert out.state == State.PROTECTIVE_STOP and "nmpc_infeasible" in out.reasons
-
-
-def test_single_feasible_solve_resets_the_infeasible_run():
-    s = Supervisor()
-    s.step(inp(t=0.0, solve=False)); s.step(inp(t=0.1, solve=False))
-    s.step(inp(t=0.2, solve=True))
-    assert s.step(inp(t=0.3, solve=False)).state != State.PROTECTIVE_STOP
 
 
 def test_protective_stop_needs_clear_time_before_motion():

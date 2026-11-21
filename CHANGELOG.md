@@ -2,6 +2,12 @@
 
 All notable changes to this design record. Format inspired by Keep a Changelog; the project is pre-implementation, so entries are design records rather than releases.
 
+## [Unreleased] — All NMPC work removed
+
+**Removed:** `planning/stage0/` (planar NMPC, scenario, diagnosis, slack check, predictor, config and runner), `planning/tests/test_stage0.py`, `planning/tests/test_config_schema.py`, `sim/t800/planar_base.py` and its README section, `docs/13-stage0-report.md`, `planning/config_schema.py` (configuration schema for the removed planar controller). The NMPC infeasibility trigger and its reason code (`nmpc_infeasible`) are removed from `planning/safety/supervisor.py`, with its two tests. The removed code remains in git history.
+
+**Not removed:** the NMPC design in `docs/theory/`, and the architecture documents that mention NMPC as a layer.
+
 ## [Unreleased] — Humanoid NMPC removed
 
 **Removed:** `planning/humanoid_nmpc/` (controller, base model, harness, sweep, fetch script, requirements), `planning/tests/test_humanoid_nmpc.py`, and `docs/15-humanoid-nmpc.md`. The removed code remains in git history (commits `99af007`, `47b0482`, `58b8ab0`). Nothing from it is validated. The planar Stage 0 NMPC in `planning/stage0/` is unchanged.

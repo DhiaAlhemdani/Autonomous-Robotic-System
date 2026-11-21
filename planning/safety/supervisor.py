@@ -30,7 +30,6 @@ class SupervisorParams:
     degraded_scale: float = 0.5 # speed scale in DEGRADED_SENSING. ASSUMPTION
     loc_sigma_max: float = 0.10 # m: localisation 1-sigma above this -> REDUCED_AUTONOMY. ASSUMPTION
     cmd_timeout: float = 0.2    # s: no fresh command for longer -> protective stop. ASSUMPTION
-    infeasible_max: int = 3     # consecutive infeasible solves -> protective stop. ASSUMPTION
     clear_time: float = 1.0     # s: conditions must hold this long before leaving a stop. ASSUMPTION
 
 
@@ -42,7 +41,6 @@ class Inputs:
     nearest_dist: float         # m: distance to nearest person or object
     sensors_ok: bool            # all perception modalities fresh
     loc_sigma: float            # m: localisation 1-sigma
-    solve_ok: bool              # L3 solve status for this step
     estop: bool = False         # operator or hardware E-stop asserted
     heartbeat_ok: bool = True   # edge-computer heartbeat present (for the MCU side)
 
@@ -59,7 +57,6 @@ class Supervisor:
     def __init__(self, params: SupervisorParams = SupervisorParams()):
         self.p = params
         self.state = State.NOMINAL
-        self._infeasible_run = 0
         self._clear_since = None   # time since which the stop conditions have been clear
         self._latched_safe = False
 
@@ -82,16 +79,13 @@ class Supervisor:
             self.state = State.SAFE_STOP
             return Output((0.0, 0.0, 0.0), self.state, 0.0, reasons)
 
-        self._infeasible_run = 0 if x.solve_ok else self._infeasible_run + 1
         stale = (x.cmd is None) or (x.t - x.cmd_time > p.cmd_timeout)
         in_field = x.nearest_dist <= p.d_stop
-        protective = stale or in_field or self._infeasible_run >= p.infeasible_max
+        protective = stale or in_field
         if stale:
             reasons.append("no_fresh_command")
         if in_field:
             reasons.append("safety_field")
-        if self._infeasible_run >= p.infeasible_max:
-            reasons.append("nmpc_infeasible")
 
         if protective:
             self._clear_since = None
