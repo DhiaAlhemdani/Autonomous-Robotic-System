@@ -105,6 +105,13 @@ class WholeBody:
                 mujoco.mj_jacBody(m, d, jp, None, fb)
                 J_rows.append(jp)
                 e_rows.append(origin_target - d.xpos[fb])
+            # Flat soles: foot z-axis driven to world z (roll and pitch of each foot).
+            for fb in self.feet:
+                jrf = np.zeros((3, nv))
+                mujoco.mj_jacBody(m, d, None, jrf, fb)
+                Rf_ = d.xmat[fb].reshape(3, 3)
+                J_rows.append(np.vstack([jrf[1], -jrf[0]]))
+                e_rows.append(-np.array([Rf_[0, 2], Rf_[1, 2]]))
             jr = np.zeros((3, nv))
             mujoco.mj_jacBody(m, d, None, jr, self.base)
             J_rows.append(jr[2:3])

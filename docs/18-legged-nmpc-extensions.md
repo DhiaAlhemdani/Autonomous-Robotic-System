@@ -140,3 +140,29 @@ The layer converges at the measured height for forward offsets up to about 0.15 
 - Solver failures remain undiagnosed, as in `docs/17`.
 - The plant is the reduced model plus kinematic whole-body. No torque, dynamic, collision, or hardware claim. The 0.9536 m CoM height is kinematically reachable only for forward offsets up to about 0.15 m.
 - Solve and IK times are sandbox measurements.
+
+## 10. Full-dynamics walking attempt (gate lifted for this attempt)
+
+The gate in the project plan (walking blocked until standing passes) was lifted by the user for this attempt. The attempt used the full MuJoCo T800 model with a floor (`planning/legged_nmpc/fullsim.py`). The NMPC drives the whole-body IK, and the IK targets drive the 25 motors through PD with gravity feedforward (`qfrc_bias`), clipped to each motor's torque limit.
+
+**Environment correction.** The rebuilt `.venv` had picked up MuJoCo 4.0.1 and CasADi 3.8.2. The repo pins MuJoCo 3.2.3 (README, Dockerfile). MuJoCo 4.0.1 could not load the model through `MjSpec` (no joints), and the viewer was broken. The venv was rebuilt with the pinned versions: mujoco 3.2.3, casadi 3.6.7, numpy 1.26.4, scipy 1.13.1, pytest 8.3.3. The viewer runs again. The planning suite under the pinned versions gives 36 passed, 2 failed (standing and whole-body CoM residual, as in §9).
+
+**Outcome: the robot does not stand, so it does not walk.** Measured in simulation, not claimed for hardware:
+
+| Experiment | Result |
+|---|---|
+| Standing with NMPC + IK + PD (kp = 1) | falls at 1.4–1.8 s |
+| Standing with ankle attitude feedback (±50, ±200 N·m/rad) | falls at 1.65–1.9 s in every case |
+| Fixed IK pose held with PD + gravity feedforward | pitch reaches 8.7° at 0.8 s |
+| Same, after adding a flat-sole constraint to the IK | feet flat (z-axis vertical); still pitches, 10.5° at 1.0 s |
+| Same, gains × 1, 3, 6 | still drifts forward; pitch 4° at 0.9 s even at ×6 |
+
+**What the measurements show.**
+- The base tilts and yaws in the full model. The IK constrains base orientation only kinematically, and no actuator controls the trunk's attitude directly.
+- The centre of pressure sits about 3 cm behind the CoM even at the IK pose, so the robot is out of balance from the start. Its contacts span x = ±0.121 m, so the sole geometry is in the expected place.
+- The restoring stiffness needed about the feet is roughly m·g·h ≈ 800 N·m/rad. Gains of ×1 to ×6 did not remove the drift. Ankle torque limits (160 N·m) are small relative to the hip (415 N·m), so the ankle alone cannot balance.
+- The fixed-pose drift at high gain is not yet explained. The likely candidates are torque saturation at the ankle and hip, or contact compliance. Neither was isolated.
+
+**What this does not show.** No standing, no walking, no balance claim for the T800. The reduced NMPC never produced the forces that act on the robot; the full-dynamics loop uses only the IK joint targets derived from it. The `docs/17` NMPC forces are not applied through contact.
+
+**What would be needed.** A balance controller in joint space (CoM/attitude feedback with ankle and hip strategies, torque-aware), a foot-contact model that is verified before walking, and an explanation of the fixed-pose drift. These are the first steps before any walking experiment can be meaningful.
