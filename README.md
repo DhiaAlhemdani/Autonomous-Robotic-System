@@ -48,7 +48,7 @@ One shared virtual environment, `.venv`, at the repository root serves every Pyt
 
 ```
 python3 -m venv .venv                      # once; on Ubuntu/Debian: sudo apt install python3-venv
-.venv/bin/python -m pip install mujoco==3.2.3 numpy==1.26.4 scipy==1.13.1 pytest==8.3.3 osqp==1.1.3 quadprog==0.1.14
+.venv/bin/python -m pip install mujoco==3.2.3 numpy==1.26.4 scipy==1.13.1 pytest==8.3.3 osqp==1.1.3 casadi==3.6.7 quadprog==0.1.14
 ```
 
 Run commands with `.venv/bin/python`, or activate with `. .venv/bin/activate`. Pins match CI (`.github/workflows/skeleton.yml`). Each package's README gives its run command.
