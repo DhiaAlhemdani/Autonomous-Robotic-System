@@ -45,14 +45,12 @@ The EU Machinery Regulation (EU) 2023/1230 applies from **20 January 2027** and 
 
 ## Python environment
 
-One shared virtual environment, `.venv`, at the repository root serves every Python check (the T800 viewer, the NMPC package, Stage 0 tests). It is gitignored by `.venv*/`.
+One shared virtual environment, `.venv`, at the repository root serves every Python check (the T800 viewer, Stage 0 tests). It is gitignored by `.venv*/`.
 
 ```
 python3 -m venv .venv                      # once; on Ubuntu/Debian: sudo apt install python3-venv
-.venv/bin/python -m pip install mujoco==3.2.3 -r planning/humanoid_nmpc/requirements.txt
+.venv/bin/python -m pip install mujoco==3.2.3 numpy==1.26.4 scipy==1.13.1 pytest==8.3.3 osqp==1.1.3 quadprog==0.1.14
 ```
-
-If pip's downloads keep failing hash checks on your network, run `.venv/bin/python planning/humanoid_nmpc/fetch_verified.py` instead. It downloads each wheel, checks it against the PyPI sha256, retries bad copies, and installs only verified files.
 
 Run commands with `.venv/bin/python`, or activate with `. .venv/bin/activate`. Pins match CI (`.github/workflows/skeleton.yml`). Each package's README gives its run command.
 

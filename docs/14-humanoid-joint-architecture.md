@@ -86,7 +86,7 @@ NMPC stays at L3, as decided by the project owner (`docs/02` §11). It is the lo
 - **Output:** a body-frame reference `(vx, vy, ω)` at 10–20 Hz, sent to L1 locomotion. Limits are set in §3.1 and by the safety supervisor (§2.5).
 - **Limit of the interface:** the upstream walking policy takes only a velocity command. NMPC cannot send footstep or full-body trajectory targets through this interface.
 - **Shaping:** a limit on acceleration and on yaw rate, so the walking policy receives commands inside its training range. The range is not documented upstream and must be measured.
-- **Design:** `docs/15` proposes the humanoid NMPC model, cost, constraints, solver criteria and tests. It is a proposal, not frozen. The fallback chain of `docs/02` §6 applies.
+- **Design:** the humanoid NMPC design (formerly `docs/15`) was removed; there is no humanoid NMPC layer in the repository. The fallback chain of `docs/02` §6 applies.
 
 ### 2.5 L2 — Safety supervisor
 

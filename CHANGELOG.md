@@ -2,13 +2,9 @@
 
 All notable changes to this design record. Format inspired by Keep a Changelog; the project is pre-implementation, so entries are design records rather than releases.
 
-## [Unreleased] — Humanoid NMPC, first implementation
+## [Unreleased] — Humanoid NMPC removed
 
-**Added:** `planning/humanoid_nmpc/` (controller, base model, closed-loop harness, seeded sweep) and `planning/tests/test_humanoid_nmpc.py` (12 tests). Design in `docs/15`, implementation status in `docs/15` §10.
-
-**Decided by measurement (partial):** the QP backend is quadprog (active set). OSQP is kept for comparison. Solve times are sandbox measurements.
-
-**Known limitations:** no recursive feasibility guarantee (six steps inside `d_min` in one held-out seed, during `protective_stop`); some seeds stall in local minima; prediction is exact in these tests; base model only, no walking policy, no MuJoCo. Nothing is validated and no interface is frozen.
+**Removed:** `planning/humanoid_nmpc/` (controller, base model, harness, sweep, fetch script, requirements), `planning/tests/test_humanoid_nmpc.py`, and `docs/15-humanoid-nmpc.md`. The removed code remains in git history (commits `99af007`, `47b0482`, `58b8ab0`). Nothing from it is validated. The planar Stage 0 NMPC in `planning/stage0/` is unchanged.
 
 ## [Unreleased] — Platform revision (docs 00–02, T800)
 
