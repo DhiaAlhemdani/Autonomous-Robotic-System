@@ -320,3 +320,20 @@ Results (single runs, MuJoCo 3.2.3):
 - Walking v=0.2 m/s, 6 s: falls at 2.02 s with 4 NMPC failures (was 2.14 s). This is within run-to-run noise, not an improvement.
 
 Status: the fix is a correctness correction to the QP's constraints. It does not explain the stance-foot roll. Walking not achieved.
+
+## 10.12 Whole-body QP audit (single batch)
+
+With the Jdot fix (§10.11), one walk at v = 0.2 m/s, 2 s:
+- Active-contact acceleration residual: max 0.001 m/s². The contact constraint holds.
+- Torque saturation: 0% of ticks. Torque limits are not the cause.
+- Target residuals are large: roll up to 25 rad/s², CoM up to 48 m/s², swing foot up to 3 m/s². The QP does not realise its targets.
+
+Cost-weight test (attitude weight `att`, swing-foot weight `foot`; other weights unchanged), walk 6 s:
+- att 1, foot 20 (current): falls 2.02 s.
+- att 1, foot 1: falls 2.26 s.
+- att 3, foot 1: falls 0.87 s.
+- att 10, foot 1: falls 1.97 s.
+- att 30, foot 1: falls 1.06 s.
+- att 100, foot 20 (2 s run): falls 1.63 s, roll residual 0.18 rad/s².
+
+Changing the weights trades roll tracking against CoM tracking, but no pair walks. Weights are not the root cause. The unrealised targets point to the requested accelerations being inconsistent with the contact model (friction and single-support geometry). That is not yet tested. Reverted: no controller change.
