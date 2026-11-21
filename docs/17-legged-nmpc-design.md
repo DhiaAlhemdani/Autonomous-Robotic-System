@@ -37,7 +37,7 @@ Horizon `N` steps. Decision variables: states `x_0..x_N` and inputs `u_0..u_{N-1
 
 subject to: multiple-shooting dynamics equalities, friction pyramid, force bounds, ZMP-in-support (per stage, with the stance and footstep plan as parameters).
 
-The reference `p_ref`, `v_ref` is a constant-velocity command from a given speed command, with the current CoM as the starting point.
+The reference `p_ref(t) = (v_cmd * t, 0, Z_NOM)`, `v_ref = (v_cmd, 0, 0)`, is a constant-velocity command measured from the episode origin. Amendment, made before any code was written: the footstep plan is defined on this same reference, so it cannot start from the current CoM. The initial CoM may be offset from the origin (§7).
 
 ## 5. Solver and receding horizon
 
@@ -71,4 +71,32 @@ The reference `p_ref`, `v_ref` is a constant-velocity command from a given speed
 
 ## 9. Results
 
-_To be filled in after implementation, with the commit and the exact outputs._
+Implementation: `planning/legged_nmpc/` (config, model, controller, sim). Tests: `planning/tests/test_legged_nmpc.py`. Sweep: `python -m planning.legged_nmpc.sim`, output in `runs/legged_nmpc_sweep_{tuning,heldout}.json` (git-ignored).
+
+**Tests (§6).** Five declared tests plus a vendor-model check that the mass, CoM height and foot offset match `vendor/t800`.
+
+| Test | Result |
+|---|---|
+| Vendor constants match `vendor/t800` | pass |
+| 1. Discrete model matches ODE solution (1e-9) | pass |
+| 2. Standing: final CoM error < 1 mm after 3 s | **FAIL: 3.7 mm** (seed-free run, offset 0.02 m) |
+| 3. Walking 0.3 m/s: windowed mean velocity error < 0.02 m/s over last 5 s | pass (0.0002 m/s, 10 s run) |
+| 4. Determinism | pass |
+| 5. Applied forces within friction and bounds | pass |
+
+Test 2 is a real miss against the declared limit. It was not retuned. The test file was edited once, to drop a velocity assertion that was not in §6. The instantaneous mean velocity error (0.048 m/s, §9 below) is reported as a metric, not a gate.
+
+**Seeded sweep (§7), run once, no tuning.** Speed command, initial offset and push drawn from the seed (§7). 10 s per episode, push at 3 s for 0.2 s.
+
+| Seeds | Episodes | Solver failures | Infeasible-step fraction | ZMP violation max | Friction violation max | Windowed velocity error (mean) | Max CoM deviation | Solve p50 (median over episodes) |
+|---|---|---|---|---|---|---|---|---|
+| 0–9 (tuning) | 10 | 0 | 0.000 | 0 m | 1.5e-8 N | 0.0004 m/s | 0.060 m | 0.094 s |
+| 10–19 (held-out) | 10 | **2** (seeds 12, 14) | 0.001 | 0 m | 1.7e-8 N | 0.0004 m/s | 0.073 m | 0.095 s |
+
+Notes on the sweep:
+- Failed solves fall back to the shifted warm start and are counted, not hidden. Their effect on the trajectory is not separately measured.
+- The instantaneous mean velocity error is 0.048 m/s in every episode. It reflects gait ripple within the period, not a steady offset.
+- All 20 episodes stay within 0.1 m of the reference throughout, and the force bounds hold to IPOPT's tolerance (about 1e-8 N).
+- Solve times are sandbox measurements, not target-hardware figures.
+
+**What this does not show.** The plant is the same reduced model, so the sweep tests the controller within this model, not the T800. No walking, balance or push claim is made for the robot. Solver failures are not diagnosed. Standing does not meet its declared 1 mm limit, and the controller is not claimed to converge to nominal in finite time.
