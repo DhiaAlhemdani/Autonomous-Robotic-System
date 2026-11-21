@@ -399,3 +399,15 @@ Counting explanation: the hard set asks for 22 independent accelerations (CoM 3,
 Consequence: posture must be soft (as in the weighted default). Strict priority over posture cannot be feasible. The priority and hierarchy tests in §10.14–§10.16 that kept posture as a fixed level were infeasible for this reason, so they do not test the hierarchy itself. A fair hierarchy test needs posture removed from the hard set and CoM, attitude and swing foot given the remaining freedom. Not run here.
 
 Status: walking not achieved.
+
+## 10.18 Fair hierarchy test: posture soft (single batch)
+
+Posture is now a soft cost in the final stage of the priority mode. CoM, attitude and swing foot are the fixed levels, in the order given. Default weighted mode unchanged.
+
+Walk v = 0.2 m/s, 6 s; standing 3 s:
+- Order attitude > swing foot > CoM: standing 0.73 mm; walk falls at 0.70 s; 9 fallbacks, 2 failed solves.
+- Order CoM > attitude > swing foot: standing 0.73 mm; walk falls at 0.79 s; 15 fallbacks, 2 failed solves.
+
+Result: with posture soft, the three remaining hard tasks (9 accelerations) are still infeasible on many ticks. Each is feasible alone and in pairs (§10.15), so the conflict is among CoM, attitude and swing foot together under the contact and friction constraints. Posture was not the only conflict; §10.17's over-determination argument covered posture only.
+
+Not adopted. The default stays weighted. Status: walking not achieved.

@@ -226,7 +226,8 @@ class WBCQP:
             J, _ = T[nm]
             fixA.append(J)
             fixv.append(J @ x)
-        P, q, _ = self._cost(d, targets, [])
+        # Posture (if not a fixed level) is a soft cost in the final stage (docs/18 §10.18).
+        P, q, _ = self._cost(d, targets, [] if "post" in self.order else ["post"])
         A, l, u = assemble()
         x, st = self._qp(P, q, A, l, u, x)
         return x, st
