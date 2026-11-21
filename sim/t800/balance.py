@@ -109,7 +109,8 @@ HIP_PITCH = ["J00_HIP_PITCH_L", "J06_HIP_PITCH_R"]
 
 # cop_margin: CoP guard (declared round, default 0 = off). If the CoM error points toward a sole edge and the
 # CoP is within cop_margin of that edge, the ankle feedback term is zeroed.
-DEFAULT_CFG = dict(sign=+1.0, kc=3.0, kv=0.5, hip_sign=+1.0, kh=2.0, ki=0.0, cop_margin=0.0)
+DEFAULT_CFG = dict(sign=+1.0, kc=3.0, kv=0.5, hip_sign=+1.0, kh=2.0, ki=0.0, cop_margin=0.0, proj_inset=0.0)
+OMEGA = (9.81 / 0.87) ** 0.5   # capture-point rate for the projection design (pelvis height)
 
 
 def foot_contact_extent_x(r):
@@ -159,6 +160,7 @@ class BalanceController:
         self.dt = r.m.opt.timestep
         self.prev = r.com_error()
         self.integ = np.zeros(2)
+        self.prev_com_x = float(r.d.subtree_com[1][0])
 
     def reset(self):
         self.prev = self.r.com_error()
@@ -172,6 +174,18 @@ class BalanceController:
         self.prev = e
         self.integ = self.integ + e * dt
         fb = cfg["sign"] * (cfg["kc"] * e[0] + cfg["kv"] * ev[0] + cfg["ki"] * self.integ[0])
+        if cfg["proj_inset"] > 0.0:
+            ext = foot_contact_extent_x(r)
+            cop = cop_x(r)
+            com_x = float(r.d.subtree_com[1][0])
+            vx = (com_x - self.prev_com_x) / dt
+            self.prev_com_x = com_x
+            if ext is not None and cop is not None:
+                lo, hi = ext[0] + cfg["proj_inset"], ext[1] - cfg["proj_inset"]
+                if lo > hi:
+                    lo = hi = 0.5 * (ext[0] + ext[1])
+                r_proj = min(max(com_x + vx / OMEGA, lo), hi)
+                fb = cfg["sign"] * cfg["kc"] * (r_proj - cop)
         if cfg["cop_margin"] > 0.0:
             cop = cop_x(r)
             ext = foot_contact_extent_x(r)

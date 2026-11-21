@@ -393,3 +393,12 @@ So the balance law holds the −x 100 N push on every seed where quiet standing 
 - Selection rule: keep the values where every tuning seed passes both the quiet and the push criteria. Among those, choose the lowest maximum quiet tilt. Ties go to the smaller inset.
 - Then one full Stage A run of the selected value on unused seeds **190–194**, with no further tuning. The verdict of that run stands.
 - Scope: simulation only. A FAIL closes the projection design on this controller.
+
+**Result of the declared CoP-projection test (tuning seeds 185–189; `runs/stage_a/proj_tune_185_189.json`, git-ignored): no inset selected; projection refuted.**
+- `proj_inset` = 0 (control, existing law): quiet standing passes on all five seeds (3.7–5.0°). Push −x 100 N fails on seed 187 (5.12°). Four of five seeds pass both. Fails the rule on seed 187 (quiet 4.98° is also at the limit).
+- `proj_inset` = 0.02 m: falls or sits at the 25° cap on four seeds (185–189 quiet tilt 24.8–25.0°, falls at 3.3–15.5 s). Fails the rule on every seed.
+- `proj_inset` = 0.04 m: falls on all five seeds in quiet standing (6.7–17.2 s). Fails the rule.
+- No value passes, so no held-out run on seeds 190–194. The verdict on this design is FAIL on the tuning rule.
+- Reading: the capture-point projection, applied as a tracking law on the ankle, makes the robot fall. The control law is the more reliable of the two designs here. Its only failure on these seeds is one push on seed 187.
+
+**Closing the CoP work.** Three CoP-related designs have now been declared and tested on the balance law: the CoP guard (`cop_margin`), the integral term (`ki`) and the CoP projection (`proj_inset`). None passed its declared rule. This track is closed. Stage A is **not passed** by the balance law. The committed defaults are unchanged (`ki=0`, `cop_margin=0`, `proj_inset=0`). Seeds 160–189 are used. Seeds 190 and up are unused. Any further design needs its own declared round.
