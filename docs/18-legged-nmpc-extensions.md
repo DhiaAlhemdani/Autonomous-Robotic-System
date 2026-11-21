@@ -272,3 +272,17 @@ Single runs, no sweeps. Diagnostics were scripted and not committed.
 Not tested yet, next: the realised centre of pressure from the QP contact forces against the stance support box at 0.8–1.2 s. If it leaves the box, the roll is a support-geometry failure. If it stays inside, the roll comes from the floating-base dynamics and the attitude gains.
 
 Status: walking not achieved. The earlier candidate causes in docs/19 §6 are ruled in or out as follows: (1) yaw authority, ruled out; (2) swing yaw, not relevant at w = 0 (the swing yaw is constant); (3) posture coupling, not tested; (4) single-foot tilt, supported and not yet explained.
+
+## 10.9 Centre of pressure and posture, one-run diagnosis (committed controller, v = 0.2 m/s)
+
+Measured per tick from the QP's contact forces: the centre of pressure (CoP) and its signed margin to the convex hull of contact corners (fz > 1 N). Single runs.
+
+- 0.6–0.95 s: CoP inside the stance support, margin 0.01–0.08 m, lateral CoP near the outer edge of the stance foot (y ≈ −0.16 for the right stance, edge at −0.176).
+- 1.0–1.15 s: fewer than three contact points, so the margin is undefined; the robot is supported by one or two corners.
+- Posture gain off (kp_post × 0): falls at 1.56 s with 5 NMPC failures. The posture term helps; it is not the cause.
+
+Tested: shrinking the ZMP support box by a margin (ZMP_MARGIN), so the planned CoP stays inside with room. Results: margin 0 falls 2.14 s (4 NMPC failures); margin 0.02 m falls 1.51 s (2 failures, 1 QP infeasible); margin 0.03 m falls 1.57 s (0 failures). Standing unchanged. Reverted; not kept.
+
+Interpretation: the CoP reaches the foot edge because the lateral CoM motion (committed y = 0 reference drifting to about −0.1 m, see §10.5) is not supported by the foot geometry. Narrowing the allowed region makes the NMPC infeasible or biased earlier. The lateral reference and the support geometry must be consistent first. That is the LIP reference of §10.7, which tracks but still fails at 1.2 s by roll. The remaining gap is the roll of the stance foot with one or two contacts, which this run does not explain.
+
+Status: walking not achieved. Standing and push-standing remain the only gates passed (docs/19 §7).
