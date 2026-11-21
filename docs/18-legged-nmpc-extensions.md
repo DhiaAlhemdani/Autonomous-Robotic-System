@@ -240,3 +240,11 @@ Tried, not kept:
 - Slower gait, PERIOD 1.8 s / STANCE 1.2 s: falls at 1.62 s with 5 NMPC failures. PERIOD 2.0 s / STANCE 1.3 s: falls at 1.51 s with 4 NMPC failures. Standing unchanged in both. Not kept.
 
 Status: walking is still NOT achieved. The next step needs a ZMP-consistent CoM reference (e.g., linear inverted pendulum preview) or a relaxed lateral position cost. Both are design changes and are not implemented.
+
+## 10.6 Lateral position weight, negative result
+
+Tried a separate lateral CoM position weight Q_PY (the reference is unchanged, y = 0), at v=0.2 m/s, 6 s:
+- Q_PY = 5 (same as Q_P): falls at 2.14 s, 4 NMPC failures.
+- Q_PY = 0.5: falls at 2.29 s, 4 NMPC failures.
+- Q_PY = 0: falls at 2.36 s, 5 NMPC failures.
+Standing unchanged in all three. Reverted; not kept. Lowering the lateral cost delays the fall slightly but does not stop it, which suggests the lateral ZMP constraints (§10.5) are the binding limit, not the cost weight.
