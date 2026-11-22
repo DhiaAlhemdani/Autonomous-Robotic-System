@@ -447,3 +447,7 @@ Both tests miss their declared limits (test 2: standing CoM error < 1 mm after 3
 - Test 7 CoM residual: 7.67 mm at N = 16, 7.72 mm at N = 24 (limit 5 mm). Stance residual 11.0 mm (limit 5 mm). The horizon has no effect. Test 7 measures the kinematic whole-body layer (`wbik.py`), not the torque QP.
 
 Test 7 already failed before the horizon change (docs/18 §547 history). The declared limits are kept; they are not relaxed to pass. Fixing either test needs a change to the reduced NMPC's convergence (test 2) or to the whole-body IK's accuracy (test 7), which are separate design changes and are not made here.
+
+## 10.22 Measured-state footstep placement (docs/19 §10): does not walk
+
+Footsteps are placed from the measured divergent component (DCM), not the open-loop path (`walk_qp.QPWalker(dcm_k=1.0)`). Walk v = 0.2, 6 s, one run: falls at 2.14 s, 5 NMPC failures, 0 failed QP solves. Same fall time as the baseline. The footstep placement is not the root cause. Not adopted as the default (`dcm_k` defaults to 0.0). Next: the agreed fallback, a balance-strategy change, which needs a declared design first.

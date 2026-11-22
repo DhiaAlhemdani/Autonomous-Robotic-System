@@ -12,7 +12,8 @@ import numpy as np
 
 from .config import LeggedNMPCConfig
 from .controller import LeggedNMPC
-from .model import contact_state, swing_pose
+from .model import contact_state, swing_pose, _stance_index
+import math
 from .wbc_qp import WBCQP
 from .wbik import LEG_WAIST
 from .fullsim import FullWalk
@@ -47,7 +48,7 @@ class QPWalker:
     """One NMPC + QP walking run, stepped by the caller. Attributes after each tick: fell, k, stat_fail, log."""
 
     def __init__(self, v=0.0, w=0.0, gait=None, push=None, push_t=None, push_dur=0.2, kc=10.0, dc=4.0,
-                 ka=40.0, da=8.0, kf=100.0, df=20.0, kp_post=60.0, kd_post=6.0, log_every=0.5, nmpc_every=None):
+                 ka=40.0, da=8.0, kf=100.0, df=20.0, kp_post=60.0, kd_post=6.0, log_every=0.5, nmpc_every=None, dcm_k=0.0):
         cfg = LeggedNMPCConfig()
         self.cfg = cfg
         self.fw, self.qp, self.act, self.q_stand = build(cfg)
@@ -58,6 +59,7 @@ class QPWalker:
         self.push, self.push_t, self.push_dur = push, push_t, push_dur
         self.kc, self.dc, self.ka, self.da, self.kf, self.df = kc, dc, ka, da, kf, df
         self.kp_post, self.kd_post = kp_post, kd_post
+        self.dcm_k = dcm_k  # docs/19 §10: capture-point correction of the next footstep (0 = off)
         self.w_ = {"com": 1.0, "att": 1.0, "foot": 20.0, "post": 0.05, "tau": 1e-6, "force": 1e-6}
         self.dt_ctrl = cfg.dt
         self.sub = int(round(self.dt_ctrl / self.m.opt.timestep))
@@ -104,6 +106,8 @@ class QPWalker:
         for fi in (0, 1):
             if not active[fi]:
                 xy, z, yaw_f = swing_pose(cfg, t + self.dt_ctrl, self.v, self.w, fi)
+                if self.dcm_k:
+                    xy = xy + self._dcm_blend(t + self.dt_ctrl, fi) * self._dcm_delta(x, com_ref, vel_ref)
                 tgt = origin_target(self.fw, xy, z, yaw_f, fi)
                 cur = d.xpos[self.fw.wb.feet[fi]]
                 jp = np.zeros((3, m.nv))
@@ -130,6 +134,22 @@ class QPWalker:
         for i, (dof, a) in enumerate(self.act):
             d.ctrl[a] = float(tau[i])
         self.com_ref, self.psi_ref, self.psi, self.active = com_ref, psi_ref, float(x[6]), active
+
+    def _dcm_delta(self, x, com_ref, vel_ref):
+        """K * (measured DCM - reference DCM) in the xy plane. DCM xi = c + cdot / omega."""
+        omega = math.sqrt(9.81 / self.cfg.Z_NOM)
+        xi_meas = x[0:2] + x[3:5] / omega
+        xi_ref = com_ref[0:2] + vel_ref[0:2] / omega
+        return self.dcm_k * (xi_meas - xi_ref)
+
+    def _dcm_blend(self, t, foot):
+        """Weight of the correction in the swing pose: 0 in stance, rises to 1 at touchdown (same blend as swing_pose)."""
+        cfg = self.cfg
+        _, into = _stance_index(cfg, t, foot)
+        if into < cfg.STANCE_T:
+            return 0.0
+        s = (into - cfg.STANCE_T) / cfg.SWING_T
+        return 0.5 * (1.0 - math.cos(math.pi * s))
 
     def substep(self):
         """One physics step with the push applied if due. Returns True if the robot has fallen."""
@@ -159,9 +179,9 @@ class QPWalker:
 
 
 def run(v=0.0, w=0.0, T=3.0, gait=None, push=None, push_t=None, push_dur=0.2, kc=10.0, dc=4.0,
-        ka=40.0, da=8.0, kf=100.0, df=20.0, kp_post=60.0, kd_post=6.0, log_every=0.5):
+        ka=40.0, da=8.0, kf=100.0, df=20.0, kp_post=60.0, kd_post=6.0, log_every=0.5, dcm_k=0.0):
     walker = QPWalker(v=v, w=w, gait=gait, push=push, push_t=push_t, push_dur=push_dur, kc=kc, dc=dc,
-                      ka=ka, da=da, kf=kf, df=df, kp_post=kp_post, kd_post=kd_post, log_every=log_every)
+                      ka=ka, da=da, kf=kf, df=df, kp_post=kp_post, kd_post=kd_post, log_every=log_every, dcm_k=dcm_k)
     for _ in range(walker.n_ticks(T)):
         walker.plan_and_actuate()
         for _ in range(walker.sub):

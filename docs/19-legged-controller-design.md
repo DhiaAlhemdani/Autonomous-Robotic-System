@@ -101,3 +101,10 @@ Tests (declared before running):
 - T2 (walk, one run, same gates as G2 in §7): walk v = 0.2 for 6 s, no fall, NMPC failures 0, QP failed solves 0.
 - If T2 fails: change the balance strategy (ankle and hip strategy) as the user agreed. Record the result either way.
 - The seed rule of docs/17 applies if any walking claim is made.
+
+### 10.1 Result of the design (single run)
+
+- T1 as declared (swing target within 1 cm of the capture point) is withdrawn. It was not a valid check: the swing target includes the ±0.121 m lateral foot offset, so it cannot be compared with the capture point. The correction is applied by construction: next placement + K * (xi_meas − xi_ref).
+- T2 (walk v = 0.2, 6 s, K = 1.0, `walk_qp.QPWalker(dcm_k=1.0)`): falls at 2.14 s, 5 NMPC failures, 43 QP solves, 0 failed. Gate G2 fails.
+- Result: the measured-state footstep placement does not walk, and it does not change the fall time from the baseline (2.14 s). The footstep placement is not the root cause of the infeasibility.
+- Per the agreed plan, the next step is the fallback: change the balance strategy (ankle and hip strategy). That needs its own declared design before code.
