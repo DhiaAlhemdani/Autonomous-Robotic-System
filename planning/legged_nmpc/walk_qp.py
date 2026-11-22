@@ -48,7 +48,7 @@ class QPWalker:
     """One NMPC + QP walking run, stepped by the caller. Attributes after each tick: fell, k, stat_fail, log."""
 
     def __init__(self, v=0.0, w=0.0, gait=None, push=None, push_t=None, push_dur=0.2, kc=10.0, dc=4.0,
-                 ka=40.0, da=8.0, kf=100.0, df=20.0, kp_post=60.0, kd_post=6.0, log_every=0.5, nmpc_every=None, dcm_k=0.0):
+                 ka=40.0, da=8.0, kf=100.0, df=20.0, kp_post=60.0, kd_post=6.0, log_every=0.5, nmpc_every=None, dcm_k=0.0, hip_k=0.0):
         cfg = LeggedNMPCConfig()
         self.cfg = cfg
         self.fw, self.qp, self.act, self.q_stand = build(cfg)
@@ -59,6 +59,7 @@ class QPWalker:
         self.push, self.push_t, self.push_dur = push, push_t, push_dur
         self.kc, self.dc, self.ka, self.da, self.kf, self.df = kc, dc, ka, da, kf, df
         self.kp_post, self.kd_post = kp_post, kd_post
+        self.hip_k = hip_k  # docs/19 §11: pelvis leans with CoM acceleration (0 = level pelvis)
         self.dcm_k = dcm_k  # docs/19 §10: capture-point correction of the next footstep (0 = off)
         self.w_ = {"com": 1.0, "att": 1.0, "foot": 20.0, "post": 0.05, "tau": 1e-6, "force": 1e-6}
         self.dt_ctrl = cfg.dt
@@ -123,7 +124,10 @@ class QPWalker:
         yaw_err = np.arctan2(np.sin(psi_ref - x[6]), np.cos(psi_ref - x[6]))
         om = d.qvel[3:6]
         ka, da = self.ka, self.da
-        att_acc = np.array([-ka * roll - da * om[0], -ka * pitch - da * om[1], ka * yaw_err - da * om[2]])
+        g = 9.81
+        roll_sp = -self.hip_k * com_acc[1] / g
+        pitch_sp = self.hip_k * com_acc[0] / g
+        att_acc = np.array([-ka * (roll - roll_sp) - da * om[0], -ka * (pitch - pitch_sp) - da * om[1], ka * yaw_err - da * om[2]])
         post = np.zeros(len(self.act))
         for i, (dof, a) in enumerate(self.act):
             j = [jj for jj in range(1, m.njnt) if m.jnt_dofadr[jj] == dof][0]
@@ -179,9 +183,9 @@ class QPWalker:
 
 
 def run(v=0.0, w=0.0, T=3.0, gait=None, push=None, push_t=None, push_dur=0.2, kc=10.0, dc=4.0,
-        ka=40.0, da=8.0, kf=100.0, df=20.0, kp_post=60.0, kd_post=6.0, log_every=0.5, dcm_k=0.0):
+        ka=40.0, da=8.0, kf=100.0, df=20.0, kp_post=60.0, kd_post=6.0, log_every=0.5, dcm_k=0.0, hip_k=0.0):
     walker = QPWalker(v=v, w=w, gait=gait, push=push, push_t=push_t, push_dur=push_dur, kc=kc, dc=dc,
-                      ka=ka, da=da, kf=kf, df=df, kp_post=kp_post, kd_post=kd_post, log_every=log_every, dcm_k=dcm_k)
+                      ka=ka, da=da, kf=kf, df=df, kp_post=kp_post, kd_post=kd_post, log_every=log_every, dcm_k=dcm_k, hip_k=hip_k)
     for _ in range(walker.n_ticks(T)):
         walker.plan_and_actuate()
         for _ in range(walker.sub):

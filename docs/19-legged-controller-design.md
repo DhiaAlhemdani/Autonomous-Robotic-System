@@ -108,3 +108,27 @@ Tests (declared before running):
 - T2 (walk v = 0.2, 6 s, K = 1.0, `walk_qp.QPWalker(dcm_k=1.0)`): falls at 2.14 s, 5 NMPC failures, 43 QP solves, 0 failed. Gate G2 fails.
 - Result: the measured-state footstep placement does not walk, and it does not change the fall time from the baseline (2.14 s). The footstep placement is not the root cause of the infeasibility.
 - Per the agreed plan, the next step is the fallback: change the balance strategy (ankle and hip strategy). That needs its own declared design before code.
+
+## 11. Design: hip strategy (fallback from §10.1)
+
+Date: 2026-10-08. Simulation only. Declared before code.
+
+Problem: the attitude target holds the pelvis level (roll and pitch to zero). When the CoM must accelerate, the level-pelvis target and the CoM target conflict (§10.17–§10.19).
+
+Change: the attitude setpoint follows the CoM acceleration that the CoM task asks for, as in an inverted pendulum:
+- pitch_sp = a_x / g, roll_sp = −a_y / g, where (a_x, a_y) is the horizontal CoM acceleration target from the NMPC PD.
+- Sign check (MuJoCo convention): positive pitch tips the head forward (+x); positive roll tips the head toward −y. Forward CoM acceleration needs a forward lean (+pitch); +y acceleration needs a lean toward +y (−roll).
+- The attitude PD acts on (roll − roll_sp, pitch − pitch_sp). Yaw unchanged.
+- Flag `hip_k` (default 0.0 = current behaviour). Tested value: 1.0 (full lean). No other gain is swept.
+
+Tests (declared before running):
+- T2 (walk v = 0.2, 6 s, `hip_k = 1.0`): no fall, 0 NMPC failures, 0 failed QP solves. Gate G2 partial (the 6 s run is an early gate; full G2 needs 10 s).
+- Standing check (G0, `hip_k = 1.0`, 3 s): CoM xy error < 1 mm. If it fails, the hip strategy is not adopted regardless of walking.
+- One run per test. If T2 fails, stop and record; no sweep of `hip_k` as the fix.
+
+### 11.1 Result (single runs)
+
+- Standing (G0 check, `hip_k = 1.0`, 3 s): no fall, CoM xy error 0.72 mm. Passes.
+- Walk (T2, v = 0.2, 6 s, `hip_k = 1.0`): falls at 1.50 s, 0 NMPC failures, 29 QP solves with 1 failed. Fails, and falls earlier than the 2.14 s baseline.
+- Result: the hip (pelvis-lean) strategy does not walk. Not adopted; `hip_k` defaults to 0.0. Per the design, no sweep of `hip_k` is run as the fix.
+- Both agreed fallbacks are now tested (§10.1 footstep correction, §11.1 hip strategy). Neither walks. Walking is not achieved.

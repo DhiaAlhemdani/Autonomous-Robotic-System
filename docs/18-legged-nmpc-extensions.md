@@ -451,3 +451,7 @@ Test 7 already failed before the horizon change (docs/18 §547 history). The dec
 ## 10.22 Measured-state footstep placement (docs/19 §10): does not walk
 
 Footsteps are placed from the measured divergent component (DCM), not the open-loop path (`walk_qp.QPWalker(dcm_k=1.0)`). Walk v = 0.2, 6 s, one run: falls at 2.14 s, 5 NMPC failures, 0 failed QP solves. Same fall time as the baseline. The footstep placement is not the root cause. Not adopted as the default (`dcm_k` defaults to 0.0). Next: the agreed fallback, a balance-strategy change, which needs a declared design first.
+
+## 10.23 Hip strategy (docs/19 §11): does not walk
+
+Attitude setpoint follows the CoM acceleration (pitch = a_x/g, roll = −a_y/g), flag `hip_k` in `walk_qp.QPWalker`, default 0.0. With `hip_k = 1.0`: standing holds (0.72 mm, 3 s); walk v = 0.2 falls at 1.50 s with 0 NMPC failures and 1 failed QP solve. Falls earlier than the baseline (2.14 s). Not adopted. Both agreed fallbacks (§10.22 footstep correction, §10.23 hip strategy) do not walk.
