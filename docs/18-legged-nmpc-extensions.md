@@ -439,3 +439,11 @@ Push recovery at the declared gate timing (docs/19 G1): push 0.2 s at t = 3 s, r
 Single runs with fixed pushes. This is not a robustness claim: no seed sweep and no other push directions or magnitudes were tested. The tuning and held-out seed sweeps are not run.
 
 `planning/tests/test_walk_qp.py`: 3 passed, 1 xfailed (walking).
+
+## 10.21 Legged tests 2 and 7: investigation, limits not changed
+
+Both tests miss their declared limits (test 2: standing CoM error < 1 mm after 3 s; test 7: whole-body CoM and stance residuals < 5 mm over 10 s at v = 0.25, w = 0.2). Single runs:
+- Test 2 final CoM error: 4.72 mm at N = 16, 3.68 mm at N = 24. Both miss the 1 mm limit. The horizon is not the only cause; the reduced NMPC converges slower than the limit allows within 3 s.
+- Test 7 CoM residual: 7.67 mm at N = 16, 7.72 mm at N = 24 (limit 5 mm). Stance residual 11.0 mm (limit 5 mm). The horizon has no effect. Test 7 measures the kinematic whole-body layer (`wbik.py`), not the torque QP.
+
+Test 7 already failed before the horizon change (docs/18 §547 history). The declared limits are kept; they are not relaxed to pass. Fixing either test needs a change to the reduced NMPC's convergence (test 2) or to the whole-body IK's accuracy (test 7), which are separate design changes and are not made here.
