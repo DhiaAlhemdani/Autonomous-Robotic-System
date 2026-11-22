@@ -80,3 +80,24 @@ Current status (docs/18 §10.20): G0 passes (0.77 mm). G1 passes at the declared
 - Perfect state (no estimator), so robustness results would not transfer to hardware.
 - Solve times are sandbox measurements, not real-time claims.
 - No walking-policy weights are used.
+
+## 10. Design: measured-state footstep placement (current work)
+
+Date: 2026-10-08. Simulation only. Declared before any code change.
+
+Diagnosis from the code (not yet tested):
+- Swing-foot targets come from `model.swing_pose`, which places each step with `placement()`, i.e. on the open-loop reference path `ref_com_xy`. The placement ignores where the CoM actually is.
+- The CoM target is the NMPC reference plus PD. If the real CoM lags or leads the path, the swing foot lands where the path says, not under the CoM. The stance then has to move the CoM to the foot. That is a conflict between the CoM and swing-foot targets, which matches the joint infeasibility of §10.17–§10.19.
+- The attitude target is PD to zero roll and pitch. It is not the cause of the infeasibility on its own (§10.15).
+
+Design (one change): place each step from the measured divergent component (DCM / capture point), not the open-loop path.
+- Capture point: xi = c + cdot / omega, omega = sqrt(g / z_nom), with c and cdot measured.
+- Corrected placement for the next stance: p_next = p_ref + K_xi * (xi_meas - xi_ref), where p_ref is the current `placement()` and xi_ref is the reference DCM. Applied lateral and yaw unchanged (lateral comes from FOOT_Y as now).
+- The swing target is recomputed each tick from the current p_next, so the swing foot follows the correction during swing.
+- K_xi = 1 is the full capture-point correction. It is the only value tested in this batch. No other gain is swept.
+
+Tests (declared before running):
+- T1 (design check): with K_xi = 1, the swing foot target on the stance start is within 1 cm of xi_meas at that tick, for 10 s at v = 0.2.
+- T2 (walk, one run, same gates as G2 in §7): walk v = 0.2 for 6 s, no fall, NMPC failures 0, QP failed solves 0.
+- If T2 fails: change the balance strategy (ankle and hip strategy) as the user agreed. Record the result either way.
+- The seed rule of docs/17 applies if any walking claim is made.
