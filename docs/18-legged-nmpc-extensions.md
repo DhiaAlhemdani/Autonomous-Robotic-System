@@ -455,3 +455,16 @@ Footsteps are placed from the measured divergent component (DCM), not the open-l
 ## 10.23 Hip strategy (docs/19 §11): does not walk
 
 Attitude setpoint follows the CoM acceleration (pitch = a_x/g, roll = −a_y/g), flag `hip_k` in `walk_qp.QPWalker`, default 0.0. With `hip_k = 1.0`: standing holds (0.72 mm, 3 s); walk v = 0.2 falls at 1.50 s with 0 NMPC failures and 1 failed QP solve. Falls earlier than the baseline (2.14 s). Not adopted. Both agreed fallbacks (§10.22 footstep correction, §10.23 hip strategy) do not walk.
+
+## 10.24 Which torque limit binds (root-cause check, diagnostic only)
+
+Question: which joints saturate when the CoM, attitude and swing-foot targets are enforced as hard bands (±0.01)? Scripts run from `/tmp` (not in the repo). Walk v = 0.2, weighted default controller.
+
+Results:
+- First infeasible tick (hard bands): t = 1.45 s. Relaxing any single torque limit to 1e6 N·m restores feasibility for exactly four actuators: right hip pitch (±415 N·m) and left shoulder pitch, left shoulder roll and right shoulder roll (±160 N·m each).
+- Static torques needed to hold the standing pose on those joints: 0.1, 0.1, 1.1 and −1.1 N·m. Gravity is not the load.
+- The weighted controller's actual torques at that tick: right hip pitch 22.2 N·m, shoulder joints −4.1 to 0.6 N·m. None is near its limit. Consistent with §10.12 (0% torque saturation).
+
+Interpretation: the infeasibility is a property of the hard-band formulation. It needs large hip and arm torques to meet all three targets exactly. The weighted controller never enforces those bands. It accepts residuals (§10.12: CoM up to 48 m/s², attitude target up to 25 rad/s², swing foot up to 3 m/s²) and keeps torques small. So the torque limits are not what makes the walk fall. The strict-priority failures (§10.14–§10.18) are the same effect: the hard bands are infeasible, and the failure comes from the residuals the weighted controller accepts.
+
+Not a fix. No change to the controller. The next question is which constraint rows (unilateral normal force, CoP, friction) are active when the residuals grow. That is not run here.
