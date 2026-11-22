@@ -132,3 +132,21 @@ Tests (declared before running):
 - Walk (T2, v = 0.2, 6 s, `hip_k = 1.0`): falls at 1.50 s, 0 NMPC failures, 29 QP solves with 1 failed. Fails, and falls earlier than the 2.14 s baseline.
 - Result: the hip (pelvis-lean) strategy does not walk. Not adopted; `hip_k` defaults to 0.0. Per the design, no sweep of `hip_k` is run as the fix.
 - Both agreed fallbacks are now tested (§10.1 footstep correction, §11.1 hip strategy). Neither walks. Walking is not achieved.
+
+## 12. Root-cause chain (diagnosis, 2026-10-08)
+
+Measured facts (single walk, v = 0.2 m/s, weighted default):
+1. NMPC solves are ZMP-feasible: every successful solve satisfies its own support half-planes (checked stage by stage, max violation ≤ 0). The solver is not the cause. (An earlier check that used the CoM instead of the ZMP was invalid and is withdrawn.)
+2. Swing feet lag their planned placement by 7–14 cm (left foot: planned 0.24 m, actual 0.158 m at 1.0 s, 0.166 m at 1.2 s). Stance feet end up behind their planned placements, so the support differs from the NMPC's support model.
+3. The QP realises the swing-foot acceleration target almost exactly (residual 0.06–0.07 m/s² against targets of 2–3 m/s²). The weighting is not the cause.
+4. Mechanism: the swing loop is a PD on acceleration with kf = 100 and df = 20, a natural frequency of ω = 10 rad/s. The swing lasts 0.3 s and the target moves about 0.27 m (peak target speed about 1.4 m/s). A PD loop following a moving target lags by about v/ω ≈ 0.14 m, which matches the measured lag.
+5. Consequence: at touchdown the CoP sits at the back and outer edge of the real support (attitude residual spikes at 1.4 s with 6 of 8 corners unloaded, §10.24 data), the CoM leaves the real support, and the walk falls.
+
+Declared test (one run, before code): swing loop kf = 400, df = 40 (critical damping for ω = 20 rad/s), all else unchanged, walk v = 0.2 for 6 s. Predicted by item 4: the swing lag falls to about 0.07 m or less and the fall time moves later. If the fall is not delayed, the mechanism is not the cause and the diagnosis must be revised.
+
+### 12.1 Result of the declared test (single run): prediction falsified
+
+- kf = 400, df = 40, walk v = 0.2: falls at 1.67 s (earlier than 2.14 s baseline), 2 NMPC failures, 6 failed QP solves out of 34.
+- Prediction (fall later, lag ≤ 0.07 m) is false. Per the declared rule, item 4 of §12 is not the root cause. A stiffer swing loop makes the QP infeasible: the swing foot's stiffer acceleration target conflicts with the contact constraints.
+- Still established: items 1–3 and 5 (NMPC consistent, swing lag and planned-versus-actual support mismatch, weighting not the cause). The next step is to find which contact constraint makes the stiffer swing target infeasible (6 failed solves), not to tune gains.
+- Root cause is not yet identified. Walking is not achieved.

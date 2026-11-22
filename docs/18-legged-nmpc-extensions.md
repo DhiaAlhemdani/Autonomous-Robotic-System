@@ -468,3 +468,15 @@ Results:
 Interpretation: the infeasibility is a property of the hard-band formulation. It needs large hip and arm torques to meet all three targets exactly. The weighted controller never enforces those bands. It accepts residuals (§10.12: CoM up to 48 m/s², attitude target up to 25 rad/s², swing foot up to 3 m/s²) and keeps torques small. So the torque limits are not what makes the walk fall. The strict-priority failures (§10.14–§10.18) are the same effect: the hard bands are infeasible, and the failure comes from the residuals the weighted controller accepts.
 
 Not a fix. No change to the controller. The next question is which constraint rows (unilateral normal force, CoP, friction) are active when the residuals grow. That is not run here.
+
+## 10.25 Root-cause diagnosis chain (docs/19 §12): partial, one prediction falsified
+
+Verified:
+- The NMPC's successful solves satisfy their own ZMP half-planes at every stage (checked with the correct stage index). The earlier CoM-based check was invalid and is withdrawn.
+- Swing feet lag their planned placement by 7–14 cm (left foot 0.158 m vs planned 0.24 m at 1.0 s). Stance feet end up behind their planned placements.
+- The QP realises the swing-foot acceleration target (residual 0.06–0.07 m/s² against 2–3 m/s²). Weighting is not the cause.
+- At touchdown the CoP sits at the back and outer edge of the real support, and the CoM leaves it.
+
+Falsified: the swing lag is a loop-bandwidth effect (kf = 100, ω = 10 rad/s). A declared test with kf = 400, df = 40 falls earlier at 1.67 s, with 6 failed QP solves. Stiffer swing loop does not walk.
+
+Not identified: which contact constraint makes the stiffer swing target infeasible. That is the next diagnostic. No controller change is adopted.
